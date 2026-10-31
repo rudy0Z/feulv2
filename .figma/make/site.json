@@ -1,0 +1,10 @@
+{
+  "description": "Streamline recording and financial management for contributors, ensuring clear state transitions, secure withdrawals, and effective recovery from errors.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
