@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react"
 import {
+  LEVELS,
   jobTotal,
   makeSession,
   scenario,
@@ -76,7 +77,11 @@ function actions(set: Set, get: () => State) {
             ? cur.filter((l) => l !== lang)
             : cur
           : [...cur, lang]
-        return { ...s, langs, lang: langs[0] }
+        // Lead with a language that has open scenes, so picking languages never leaves Home empty.
+        const lead = langs.find((l) =>
+          s.jobs.some((j) => j.lang === l && j.campaign === "open"),
+        )
+        return { ...s, langs, lang: lead ?? langs[0] }
       }),
     acceptConsent: () =>
       set((s) => {
@@ -835,8 +840,28 @@ export const sel = {
           j.tier <= sel.tier(s) &&
           j.prompts.length > 0,
       ),
-  tier: (s: State): 1 | 2 | 3 =>
-    s.ledger.filter((l) => l.kind === "earning").length >= 3 ? 2 : 1,
+  /** Approved scenes so far: what levels are earned with. */
+  approved: (s: State) => s.ledger.filter((l) => l.kind === "earning").length,
+  tier: (s: State): 1 | 2 | 3 => {
+    const n = s.ledger.filter((l) => l.kind === "earning").length
+    return n >= 8 ? 3 : n >= 3 ? 2 : 1
+  },
+  /** Where you stand on the level path: progress is measured within the current level. */
+  level: (s: State) => {
+    const n = sel.approved(s)
+    const tier = sel.tier(s)
+    const cur = LEVELS[tier - 1]
+    const next = LEVELS[tier] as typeof LEVELS[number] | undefined
+    const pct = next ? Math.min(1, (n - cur.goal) / (next.goal - cur.goal)) : 1
+    return {
+      n,
+      tier,
+      cur,
+      next,
+      pct,
+      left: next ? Math.max(0, next.goal - n) : 0,
+    }
+  },
   inReview: (s: State) =>
     s.submissions
       .filter((x) => x.status === "under_review" || x.status === "appeal")

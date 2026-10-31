@@ -196,7 +196,7 @@ function Toast({ text }: { text: string }) {
       transition={SPRING}
       className="absolute inset-x-4 bottom-[116px] z-50 flex items-center gap-3 rounded-md bg-ink px-4 py-3.5 text-14 leading-snug text-white shadow-float"
     >
-      <Mark s={14} color="#9AA3FF" />
+      <Mark s={14} color="#FFB07A" />
       {text}
     </motion.div>
   )
@@ -390,20 +390,20 @@ const FLOWS: {
     ],
   },
   {
-    title: "Missions",
+    title: "Scenes",
     pages: [
       {
-        label: "Missions list",
+        label: "Scenes list",
         hint: "Search · lengths",
         go: (a) => a.goto("returning", () => ({ tab: "jobs" })),
       },
       {
-        label: "Quick missions",
+        label: "Quick scenes",
         hint: "Under 5 min",
         go: (a) => a.goto("returning", () => ({ tab: "jobs", len: "quick" })),
       },
       {
-        label: "Deep missions",
+        label: "Deep scenes",
         hint: "Chapters",
         go: (a) => a.goto("returning", () => ({ tab: "jobs", len: "deep" })),
       },
@@ -764,7 +764,7 @@ function DemoPanel() {
             <div className={head}>Review system</div>
             {subs.length === 0 && (
               <p className="px-1 text-12 text-ink-3">
-                Submit a mission to simulate review.
+                Submit a scene to simulate review.
               </p>
             )}
             {subs.map((x) => (

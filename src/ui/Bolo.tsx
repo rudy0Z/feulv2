@@ -15,17 +15,20 @@ import {
   useTransform,
   type MotionValue,
 } from "motion/react"
+import type { Env, Format } from "../state/model"
 
-/* Bolo — FEUL's studio director.
-   Built from the brand's own parts: the crown is the three-bar logo mark, the mouth becomes a
-   waveform when Bolo speaks, the crown follows YOUR voice when Bolo listens. Every mood is a
-   blend of the same layers (lids, pupils, brows, mouth, arms), so transitions morph instead of swap. */
+/* Bolo — FEUL's studio director. One shape everywhere: a soft round body, the three-bar crown
+   (the logo mark), big attentive eyes and two mitten hands. Moods are blends of the same layers,
+   so transitions morph instead of swap. Costumes (outfits) dress the same Bolo for each scene.
+   Usage rule: Bolo is a character with a job (guiding, playing a role, reacting, celebrating),
+   so it appears at most once per screen and never as list iconography or decoration. */
 
-export type Mood = "idle" | "hello" | "speak" | "listen" | "think" | "happy" | "cheer" | "concern" | "coach" | "sleep" | "wow"
-export type BoloTone = "cobalt" | "white" | "ink"
-type Mouth = "smile" | "open" | "grin" | "eq" | "o" | "flat" | "wavy" | "small" | "wow"
+export type Mood = "idle" | "hello" | "speak" | "listen" | "think" | "happy" | "cheer" | "concern" | "coach" | "sleep" | "wow" | "nod" | "laugh" | "curious"
+export type BoloTone = "brand" | "white" | "ink"
+export type Outfit = "chai" | "bag" | "cap" | "chef" | "stethoscope" | "pills" | "glasses" | "book" | "headset" | "headphones" | "phone" | "coin"
+type Mouth = "smile" | "open" | "grin" | "talk" | "o" | "flat" | "wavy" | "small" | "wow"
 
-const TONE: Record<BoloTone, {
+type ToneSpec = {
   body: string
   shade: string
   rim: string
@@ -33,45 +36,51 @@ const TONE: Record<BoloTone, {
   pupil: string
   line: string
   mouth: string
+  tongue: string
   cheek: string
   fx: string
-}> = {
-  cobalt: {
-    body: "#2B3BFF",
-    shade: "#1A23C4",
-    rim: "rgba(255,255,255,.36)",
+}
+const TONE: Record<BoloTone, ToneSpec> = {
+  brand: {
+    body: "#FF7424",
+    shade: "#E5560A",
+    rim: "rgba(255,255,255,.42)",
     sclera: "#FFFFFF",
-    pupil: "#0E0F14",
-    line: "#FFFFFF",
-    mouth: "#0A0E52",
-    cheek: "#8E98FF",
-    fx: "#9AA3FF",
+    pupil: "#1C1713",
+    line: "#3D1704",
+    mouth: "#3D1704",
+    tongue: "#FF9E8A",
+    cheek: "#FFB38A",
+    fx: "#FFB07A",
   },
   white: {
     body: "#FFFFFF",
-    shade: "#D6DAF5",
+    shade: "#FFE3CF",
     rim: "rgba(255,255,255,0)",
     sclera: "#FFFFFF",
-    pupil: "#0E0F14",
-    line: "#0E0F14",
-    mouth: "#0E0F14",
-    cheek: "#C3C9FF",
+    pupil: "#1C1713",
+    line: "#1C1713",
+    mouth: "#1C1713",
+    tongue: "#FF8A6B",
+    cheek: "#FFC7A6",
     fx: "#FFFFFF",
   },
   ink: {
-    body: "#191A22",
-    shade: "#000000",
-    rim: "rgba(255,255,255,.16)",
+    body: "#2C241E",
+    shade: "#120E0B",
+    rim: "rgba(255,255,255,.14)",
     sclera: "#FFFFFF",
-    pupil: "#0E0F14",
+    pupil: "#1C1713",
     line: "#FFFFFF",
     mouth: "#FFFFFF",
-    cheek: "#3B3F55",
-    fx: "#9AA3FF",
+    tongue: "#FF8A6B",
+    cheek: "#5A463A",
+    fx: "#FFB07A",
   },
 }
-const LIME = "#C6F432"
-const ORANGE = "#FF5A1F"
+const GOLD = "#FFC24A"
+const AMBER = "#E39A12"
+const INK = "#1C1713"
 
 type Cfg = {
   lid: number
@@ -79,10 +88,10 @@ type Cfg = {
   eyes: "open" | "happy" | "closed"
   pupil?: number
   mouth: Mouth
-  brows?: "worry" | "focus"
+  brows?: "worry" | "focus" | "raise"
   arms: [number, number]
-  body: "bob" | "bob-slow" | "hop" | "hop-loop" | "shake" | "breathe" | "pop" | "lean"
-  crown: "sway" | "eq" | "eq-slow" | "level" | "jitter" | "droop" | "still"
+  body: "breathe" | "hop" | "hop2" | "nod" | "tilt" | "laugh" | "lean"
+  crown: "sway" | "level" | "droop" | "still"
   cheeks?: boolean
   gaze?: {
     x: number
@@ -94,49 +103,83 @@ type Cfg = {
 }
 export const MOODS: Record<Mood, Cfg> = {
   idle: {
-    lid: 0.06,
+    lid: 0.04,
     eyes: "open",
     mouth: "smile",
     arms: [4, -4],
-    body: "bob",
+    body: "breathe",
     crown: "sway",
   },
   hello: {
     lid: 0,
     eyes: "happy",
     mouth: "open",
-    arms: [8, -112],
-    body: "bob",
+    arms: [6, -100],
+    body: "breathe",
     crown: "sway",
     cheeks: true,
     wave: true,
   },
   speak: {
-    lid: 0.04,
+    lid: 0.02,
     eyes: "open",
-    mouth: "eq",
-    arms: [10, -26],
-    body: "bob",
-    crown: "eq-slow",
+    mouth: "talk",
+    arms: [10, -24],
+    body: "breathe",
+    crown: "sway",
     fx: "arcs",
   },
   listen: {
     lid: 0,
     eyes: "open",
-    pupil: 1.1,
-    mouth: "o",
-    arms: [18, -18],
+    pupil: 1.08,
+    mouth: "smile",
+    brows: "raise",
+    arms: [16, -16],
     body: "lean",
     crown: "level",
-    gaze: { x: 0, y: 0.12 },
+    gaze: { x: 0, y: 0.1 },
+  },
+  nod: {
+    lid: 0,
+    eyes: "open",
+    pupil: 1.05,
+    mouth: "smile",
+    brows: "raise",
+    arms: [16, -16],
+    body: "nod",
+    crown: "level",
+    cheeks: true,
+    gaze: { x: 0, y: 0.25 },
+  },
+  laugh: {
+    lid: 0,
+    eyes: "happy",
+    mouth: "grin",
+    arms: [26, -26],
+    body: "laugh",
+    crown: "still",
+    cheeks: true,
+  },
+  curious: {
+    lid: 0,
+    tilt: 6,
+    eyes: "open",
+    pupil: 1.12,
+    mouth: "o",
+    brows: "raise",
+    arms: [10, -36],
+    body: "tilt",
+    crown: "still",
+    gaze: { x: 0.5, y: -0.3 },
   },
   think: {
-    lid: 0.3,
+    lid: 0.22,
     eyes: "open",
     mouth: "flat",
     arms: [2, -2],
-    body: "bob-slow",
-    crown: "eq-slow",
+    body: "breathe",
+    crown: "sway",
     gaze: { x: -0.7, y: -0.8 },
     fx: "orbit",
   },
@@ -154,33 +197,33 @@ export const MOODS: Record<Mood, Cfg> = {
     lid: 0,
     eyes: "happy",
     mouth: "grin",
-    arms: [96, -96],
-    body: "hop-loop",
-    crown: "eq",
+    arms: [104, -104],
+    body: "hop2",
+    crown: "still",
     cheeks: true,
     fx: "sparkle",
     pump: true,
   },
   concern: {
-    lid: 0.34,
-    tilt: 13,
+    lid: 0.16,
+    tilt: 10,
     eyes: "open",
     mouth: "wavy",
     brows: "worry",
-    arms: [-8, 8],
-    body: "shake",
-    crown: "jitter",
-    gaze: { x: 0, y: 0.25 },
+    arms: [-6, 6],
+    body: "breathe",
+    crown: "still",
+    gaze: { x: 0, y: 0.2 },
   },
   coach: {
-    lid: 0.12,
+    lid: 0.04,
     eyes: "open",
     mouth: "smile",
     brows: "focus",
-    arms: [4, -44],
-    body: "bob",
+    arms: [4, -50],
+    body: "breathe",
     crown: "sway",
-    gaze: { x: 0.5, y: 0.75 },
+    gaze: { x: 0.5, y: 0.7 },
   },
   sleep: {
     lid: 1,
@@ -194,23 +237,27 @@ export const MOODS: Record<Mood, Cfg> = {
   wow: {
     lid: 0,
     eyes: "open",
-    pupil: 0.8,
+    pupil: 0.85,
     mouth: "wow",
     arms: [58, -58],
-    body: "pop",
+    body: "hop",
     crown: "still",
+    cheeks: true,
   },
 }
 export const MOOD_NOTE: Record<Mood, string> = {
   idle: "Present, never needy. Breathes and glances.",
-  hello: "First meeting and returns. Waves once.",
-  speak: "Plays the other person. Mouth becomes a waveform.",
-  listen: "Your turn. Crown follows your voice level.",
+  hello: "First meeting and returns. Smiles and waves.",
+  speak: "Plays the other person. Mouth moves with its voice.",
+  listen: "Your turn. Leans in, brows up, crown follows your voice.",
+  nod: "Mid-sentence: a small nod and a ‘haan’, like a real listener.",
+  laugh: "Something funny or warm in your take.",
+  curious: "A question or a number in your answer. Head tilts in.",
   think: "Checking a take locally. Never implies approval.",
   happy: "Clear take, saved. One hop, then calm.",
-  cheer: "Mission complete or money approved. Rare.",
+  cheer: "Scene complete or money approved. Rare.",
   concern: "Noise, silence, a dropped mic. Worried for you, never at you.",
-  coach: "Points at the prompt. Slower, closer, louder.",
+  coach: "Points at the line. Slower, closer, louder.",
   sleep: "No work in your language. Wakes when labs need you.",
   wow: "Surprises: a rare-voice bonus, a level up.",
 }
@@ -229,15 +276,276 @@ const t3 = (o: string): CSSProperties => ({
   transformBox: "view-box",
 })
 
+/* ---------- Costumes: the same Bolo, dressed for the scene ---------- */
+function Held({ o }: { o: Outfit }) {
+  if (o === "chai")
+    return (
+      <g>
+        <path
+          className="b-steam"
+          d="M10 82 q-2 -3 0 -6"
+          stroke="#FFFFFF"
+          strokeWidth="1.6"
+          fill="none"
+          strokeLinecap="round"
+          opacity=".8"
+          style={t3("10px 80px")}
+        />
+        <path
+          className="b-steam"
+          d="M15 82 q-2 -3 0 -6"
+          stroke="#FFFFFF"
+          strokeWidth="1.6"
+          fill="none"
+          strokeLinecap="round"
+          opacity=".8"
+          style={{ ...t3("15px 80px"), animationDelay: "1.1s" }}
+        />
+        <path
+          d="M19 89 h2.5 a3.4 3.4 0 0 1 0 6.8 H19"
+          stroke="#E7D9C8"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M5.5 85 H20.5 L19 98 C18.8 99.6 17.6 100.5 16 100.5 H10 C8.4 100.5 7.2 99.6 7 98 Z"
+          fill="#FFFFFF"
+        />
+        <rect
+          x="6.4"
+          y="90"
+          width="13.2"
+          height="3.6"
+          fill="#F5640F"
+          opacity=".85"
+        />
+      </g>
+    )
+  if (o === "bag")
+    return (
+      <g>
+        <path
+          d="M99.5 87 C99.5 79 110.5 79 110.5 87"
+          stroke="#B98B52"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path d="M96 86.5 H114 L112.6 104 H97.4 Z" fill="#E9C48E" />
+        <path d="M96 86.5 H114 L113.8 89 H96.2 Z" fill="#D9AC6E" />
+        <circle cx="105" cy="96" r="3" fill="#FFFFFF" opacity=".7" />
+      </g>
+    )
+  if (o === "coin")
+    return (
+      <g>
+        <circle
+          cx="106"
+          cy="90"
+          r="8"
+          fill={GOLD}
+          stroke="#D99A1E"
+          strokeWidth="1.6"
+        />
+        <text
+          x="106"
+          y="93.6"
+          textAnchor="middle"
+          fontSize="10"
+          fontWeight="700"
+          fill="#8A5800"
+          fontFamily="system-ui"
+        >
+          ₹
+        </text>
+      </g>
+    )
+  if (o === "pills")
+    return (
+      <g>
+        <rect x="98.5" y="78" width="13" height="4.6" rx="1.4" fill="#CC4A00" />
+        <rect
+          x="99"
+          y="82"
+          width="12"
+          height="17"
+          rx="2.6"
+          fill="#FFFFFF"
+          stroke="#E7D9C8"
+          strokeWidth="1.2"
+        />
+        <path
+          d="M105 86.4 V93.6 M101.4 90 H108.6"
+          stroke="#18A06B"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+      </g>
+    )
+  if (o === "phone")
+    return (
+      <g>
+        <rect x="99" y="73" width="12" height="20" rx="3" fill={INK} />
+        <rect
+          x="100.6"
+          y="75.4"
+          width="8.8"
+          height="13.6"
+          rx="1.6"
+          fill="#FFB07A"
+        />
+      </g>
+    )
+  return null
+}
+function Worn({ o }: { o: Outfit }) {
+  // Chef's toque: tall enough to sit over the crown bars, so the silhouette reads as a kitchen.
+  if (o === "chef")
+    return (
+      <g>
+        <path
+          d="M38 46 L38 34 C30 33 27 25 32 19.5 C35 15.5 41 15 44.5 17.5 C46.5 10 53 6.5 60 6.5 C67 6.5 73.5 10 75.5 17.5 C79 15 85 15.5 88 19.5 C93 25 90 33 82 34 L82 46 Z"
+          fill="#FFFFFF"
+          stroke="#E7D9C8"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        <path d="M38 38.5 H82" stroke="#E7D9C8" strokeWidth="1.4" />
+        <path
+          d="M50 22 C51 27 51 31 50 34 M60 15 C61 22 61 29 60 34 M70 22 C69 27 69 31 70 34"
+          stroke="#EFE5D9"
+          strokeWidth="1.4"
+          fill="none"
+          strokeLinecap="round"
+        />
+      </g>
+    )
+  if (o === "cap")
+    return (
+      <g>
+        <path
+          d="M35 45 C35 31 46 24.5 60 24.5 C74 24.5 85 31 85 45 Z"
+          fill={INK}
+        />
+        <rect x="35" y="40.5" width="50" height="4.5" fill={GOLD} />
+        <path d="M60 45 H95 C99.5 45 99.5 50.5 94 50.5 H60 Z" fill={INK} />
+        <circle cx="60" cy="33" r="3.2" fill={GOLD} />
+      </g>
+    )
+  if (o === "stethoscope")
+    return (
+      <g>
+        <path
+          d="M31 77 C31 95 42 102.5 56 102.5 C67 102.5 76 99 80 93"
+          stroke="#3D3530"
+          strokeWidth="2.6"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <circle
+          cx="81.5"
+          cy="90.5"
+          r="5"
+          fill="#DCD6CF"
+          stroke="#3D3530"
+          strokeWidth="1.8"
+        />
+      </g>
+    )
+  if (o === "headset" || o === "headphones") {
+    const big = o === "headphones"
+    return (
+      <g>
+        <path
+          d="M21 68 C21 36 39 27 60 27 C81 27 99 36 99 68"
+          stroke={INK}
+          strokeWidth="4.4"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <rect
+          x={big ? 11 : 13}
+          y={big ? 56 : 58}
+          width={big ? 14 : 11}
+          height={big ? 24 : 20}
+          rx="6"
+          fill={INK}
+        />
+        <rect
+          x={big ? 95 : 96}
+          y={big ? 56 : 58}
+          width={big ? 14 : 11}
+          height={big ? 24 : 20}
+          rx="6"
+          fill={INK}
+        />
+        {!big && (
+          <>
+            <path
+              d="M18.5 77 C20 90 32 94.5 45 92.5"
+              stroke={INK}
+              strokeWidth="2.6"
+              fill="none"
+              strokeLinecap="round"
+            />
+            <circle cx="46" cy="92.3" r="3.4" fill={INK} />
+          </>
+        )}
+        {big && (
+          <>
+            <rect
+              x="14"
+              y="60"
+              width="8"
+              height="16"
+              rx="4"
+              fill="#FFB07A"
+              opacity=".55"
+            />
+            <rect
+              x="98"
+              y="60"
+              width="8"
+              height="16"
+              rx="4"
+              fill="#FFB07A"
+              opacity=".55"
+            />
+          </>
+        )}
+      </g>
+    )
+  }
+  if (o === "book")
+    return (
+      <g>
+        <path
+          d="M35 97 L60 100.5 L85 97 L85 111 L60 114.5 L35 111 Z"
+          fill="#CC4A00"
+        />
+        <path d="M37 95 L60 98.5 L60 112 L37 108.5 Z" fill="#FFFFFF" />
+        <path d="M83 95 L60 98.5 L60 112 L83 108.5 Z" fill="#FFF6EE" />
+        <path
+          d="M41 100 L55 102 M41 104 L55 106 M65 102 L79 100 M65 106 L79 104"
+          stroke="#E3D9CC"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+        />
+      </g>
+    )
+  return null
+}
+const HELD: Outfit[] = ["chai", "bag", "coin", "phone", "pills"]
+
 export default function Bolo({
   mood = "idle",
   size = 96,
-  tone = "cobalt",
+  tone = "brand",
   level,
   look,
   follow,
   ground = "light",
   label,
+  outfit,
   className = "",
   /** 0..1 live voice level. Drives the crown and lean while listening. */
   /** Eyes follow the pointer. */
@@ -253,30 +561,32 @@ export default function Bolo({
   follow?: boolean
   ground?: "light" | "dark" | "none"
   label?: string
+  outfit?: Outfit | Outfit[]
   className?: string
 }) {
   const t = TONE[tone]
   const m = MOODS[mood]
+  const wear = outfit ? (Array.isArray(outfit) ? outfit : [outfit]) : []
   const ref = useRef<SVGSVGElement>(null)
   const uid = useId().replace(/:/g, "")
   const [roam, setRoam] = useState({ x: 0, y: 0 })
 
-  // Idle saccades: small, irregular glances so Bolo feels present without asking for attention.
+  // Idle glances: small, irregular, so Bolo feels present without asking for attention.
   useEffect(() => {
     if (look || follow || m.gaze || mood === "sleep") return
     let id = 0
     const tick = () => {
       setRoam(
-        Math.random() < 0.5
+        Math.random() < 0.55
           ? { x: 0, y: 0 }
           : {
-              x: (Math.random() * 2 - 1) * 0.85,
-              y: (Math.random() * 2 - 1) * 0.45,
+              x: (Math.random() * 2 - 1) * 0.7,
+              y: (Math.random() * 2 - 1) * 0.35,
             },
       )
-      id = window.setTimeout(tick, 1600 + Math.random() * 2800)
+      id = window.setTimeout(tick, 2200 + Math.random() * 3000)
     }
-    id = window.setTimeout(tick, 900 + Math.random() * 1200)
+    id = window.setTimeout(tick, 1400 + Math.random() * 1400)
     return () => clearTimeout(id)
   }, [look, follow, m.gaze, mood])
 
@@ -298,59 +608,56 @@ export default function Bolo({
   const g = look ?? m.gaze ?? roam
   const zero = useMotionValue(0)
   const lv = level ?? zero
-  const lean = useTransform(lv, (v) => 1 + v * 0.05)
-  const c0 = useTransform(lv, (v) => 0.5 + v * 0.95)
-  const c1 = useTransform(lv, (v) => 0.45 + v * 1.15)
-  const c2 = useTransform(lv, (v) => 0.55 + v * 0.85)
+  const lean = useTransform(lv, (v) => 1 + v * 0.04)
+  const c0 = useTransform(lv, (v) => 0.55 + v * 0.8)
+  const c1 = useTransform(lv, (v) => 0.5 + v * 1)
+  const c2 = useTransform(lv, (v) => 0.6 + v * 0.75)
   const crownLevel = [c0, c1, c2]
-  const live = mood === "listen" && !!level
+  const live = (mood === "listen" || mood === "nod") && !!level
 
   const crownFill = (i: number) =>
-    mood === "happy" || mood === "cheer"
-      ? LIME
+    mood === "happy" || mood === "cheer" || mood === "wow"
+      ? GOLD
       : mood === "concern" && i === 1
-        ? ORANGE
+        ? AMBER
         : t.body
-  const crownClass = {
-    sway: "b-sway",
-    eq: "b-eq",
-    "eq-slow": "b-eq-slow",
-    level: live ? "" : "b-eq-slow",
-    jitter: "b-jitter",
-    droop: "",
-    still: "",
-  }[m.crown]
+  const crownClass =
+    m.crown === "sway" || (m.crown === "level" && !live) ? "b-sway" : ""
   const bodyClass = {
-    bob: "b-bob",
-    "bob-slow": "b-bob-slow",
-    hop: "b-hop",
-    "hop-loop": "b-hop-loop",
-    shake: "b-shake",
     breathe: "b-breathe",
-    pop: "b-pop",
+    hop: "b-hop",
+    hop2: "b-hop2",
+    nod: "b-nod",
+    tilt: "b-tilt",
+    laugh: "b-laugh",
     lean: "",
   }[m.body]
-  const shadowClass = {
-    bob: "b-shadow",
-    "bob-slow": "b-shadow-slow",
-    hop: "b-hop-shadow",
-    "hop-loop": "b-hop-shadow-loop",
-    shake: "",
-    breathe: "b-shadow-slow",
-    pop: "",
-    lean: "",
-  }[m.body]
+  const shadowClass =
+    m.body === "hop" || m.body === "hop2"
+      ? "b-hop-shadow"
+      : m.body === "breathe"
+        ? "b-shadow"
+        : ""
   const ease =
     "transform 520ms var(--ease-spring), opacity 220ms ease-out, fill 300ms ease-out"
   const show = (on: boolean): CSSProperties => ({
     opacity: on ? 1 : 0,
     transition: "opacity 200ms ease-out",
   })
-  const pupilR = tone === "white" ? 6.6 : 5.4
+  const pupilR = 6.2
 
   const arm = (side: 0 | 1) => {
     const sx = side ? 95 : 25
     const deg = m.arms[side]
+    const held = wear.filter(
+      (o) => HELD.includes(o) && (o === "chai" ? side === 0 : side === 1),
+    )
+    // A raised arm reaches further so the mitten clears the body outline instead of hiding behind it.
+    const reach = Math.abs(deg) > 60 && held.length === 0 ? 1.75 : 1
+    const ex = sx + (side ? 10 : -10) * reach
+    const ey = 79 + 12 * reach
+    const hx = ex - (side ? sx + 10 : sx - 10)
+    const hy = ey - 91
     return (
       <g
         style={{
@@ -369,12 +676,28 @@ export default function Bolo({
           <line
             x1={sx}
             y1={79}
-            x2={side ? sx + 10 : sx - 10}
-            y2={91}
+            x2={ex}
+            y2={ey}
             stroke={t.body}
-            strokeWidth={12.5}
+            strokeWidth={12}
             strokeLinecap="round"
           />
+          <g transform={`translate(${hx} ${hy})`}>
+            <circle cx={ex - hx} cy={91} r={7.2} fill={t.body} />
+            {tone === "white" && (
+              <circle
+                cx={ex - hx}
+                cy={91}
+                r={7.2}
+                fill="none"
+                stroke={t.shade}
+                strokeWidth="1.4"
+              />
+            )}
+            {held.map((o) => (
+              <Held key={o} o={o} />
+            ))}
+          </g>
         </g>
       </g>
     )
@@ -386,9 +709,9 @@ export default function Bolo({
       <g transform={`translate(${cx} 66)`}>
         <g style={show(m.eyes === "open")}>
           <clipPath id={`${uid}e${side}`}>
-            <ellipse rx="9.6" ry="11.2" />
+            <ellipse rx="9.8" ry="11.4" />
           </clipPath>
-          <ellipse rx="9.6" ry="11.2" fill={t.sclera} />
+          <ellipse rx="9.8" ry="11.4" fill={t.sclera} />
           <g
             style={{
               transform: `translate(${g.x * 3.3}px, ${g.y * 3.8}px) scale(${m.pupil ?? 1})`,
@@ -399,7 +722,7 @@ export default function Bolo({
             <circle
               cx={pupilR * 0.36}
               cy={-pupilR * 0.4}
-              r={pupilR * 0.33}
+              r={pupilR * 0.34}
               fill="#fff"
             />
           </g>
@@ -448,6 +771,15 @@ export default function Bolo({
       {el}
     </g>
   )
+  const browY = m.brows === "raise" ? -3 : m.brows === "focus" ? -1.5 : 0
+  const browR = (side: 0 | 1) =>
+    (m.brows === "worry"
+      ? 15
+      : m.brows === "focus"
+        ? 5
+        : m.brows === "raise"
+          ? -4
+          : 0) * (side ? 1 : -1)
 
   return (
     <svg
@@ -466,14 +798,13 @@ export default function Bolo({
           cy="114"
           rx="25"
           ry="4"
-          fill={ground === "dark" ? "rgba(0,0,0,.55)" : "rgba(14,15,20,.13)"}
+          fill={ground === "dark" ? "rgba(0,0,0,.5)" : "rgba(60,30,10,.12)"}
           className={shadowClass}
           style={t3("60px 114px")}
         />
       )}
       <g className={bodyClass} style={t3("60px 108px")}>
         <motion.g style={{ scale: live ? lean : 1, originX: 0.5, originY: 1 }}>
-          {/* crown — the logo mark, and your voice meter */}
           {CROWN.map((c, i) => (
             <motion.g
               key={i}
@@ -512,7 +843,7 @@ export default function Bolo({
           <path
             d={SHADE}
             fill={t.shade}
-            opacity={tone === "white" ? 0.7 : 0.5}
+            opacity={tone === "white" ? 0.75 : 0.5}
           />
           <path
             d="M33 54 C38 44 49 38.5 60 38"
@@ -521,7 +852,7 @@ export default function Bolo({
             strokeWidth="3.6"
             strokeLinecap="round"
           />
-          {/* face — shifts with gaze so the head seems to turn */}
+          {wear.includes("stethoscope") && <Worn o="stethoscope" />}
           <g
             style={{
               transform: `translate(${g.x * 2.4}px, ${g.y * 1.6}px)`,
@@ -529,25 +860,53 @@ export default function Bolo({
             }}
           >
             <ellipse
-              cx="36.5"
+              cx="35.5"
               cy="81"
-              rx="5.6"
-              ry="3.2"
+              rx="5.8"
+              ry="3.4"
               fill={t.cheek}
-              style={show(!!m.cheeks)}
+              style={show(!!m.cheeks || tone === "white")}
+              opacity={tone === "white" ? 0.8 : 1}
             />
             <ellipse
-              cx="83.5"
+              cx="84.5"
               cy="81"
-              rx="5.6"
-              ry="3.2"
+              rx="5.8"
+              ry="3.4"
               fill={t.cheek}
-              style={show(!!m.cheeks)}
+              style={show(!!m.cheeks || tone === "white")}
+              opacity={tone === "white" ? 0.8 : 1}
             />
             {eye(45, 0)}
             {eye(75, 1)}
+            {wear.includes("glasses") && (
+              <g>
+                <circle
+                  cx="45"
+                  cy="66"
+                  r="13"
+                  fill="rgba(255,255,255,.14)"
+                  stroke={INK}
+                  strokeWidth="2.6"
+                />
+                <circle
+                  cx="75"
+                  cy="66"
+                  r="13"
+                  fill="rgba(255,255,255,.14)"
+                  stroke={INK}
+                  strokeWidth="2.6"
+                />
+                <path
+                  d="M58 64 Q60 61.8 62 64"
+                  stroke={INK}
+                  strokeWidth="2.4"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </g>
+            )}
             <g style={show(!!m.brows)}>
-              {/* Focus lifts the brows a touch: attentive and encouraging. Inner ends pointing down would read as a frown. */}
               <line
                 x1="38.5"
                 y1="50.5"
@@ -558,11 +917,7 @@ export default function Bolo({
                 strokeLinecap="round"
                 style={{
                   ...t3("44.75px 50.5px"),
-                  transform: `translateY(${
-                    m.brows === "focus" ? -1.5 : 0
-                  }px) rotate(${
-                    m.brows === "worry" ? -15 : m.brows === "focus" ? -5 : 0
-                  }deg)`,
+                  transform: `translateY(${browY}px) rotate(${browR(0)}deg)`,
                   transition: ease,
                 }}
               />
@@ -576,11 +931,7 @@ export default function Bolo({
                 strokeLinecap="round"
                 style={{
                   ...t3("75.25px 50.5px"),
-                  transform: `translateY(${
-                    m.brows === "focus" ? -1.5 : 0
-                  }px) rotate(${
-                    m.brows === "worry" ? 15 : m.brows === "focus" ? 5 : 0
-                  }deg)`,
+                  transform: `translateY(${browY}px) rotate(${browR(1)}deg)`,
                   transition: ease,
                 }}
               />
@@ -589,29 +940,51 @@ export default function Bolo({
               {mouth(
                 "smile",
                 <path
-                  d="M-6.5 -1.5 Q0 4.5 6.5 -1.5"
+                  d="M-7 -1.5 Q0 5.5 7 -1.5"
                   fill="none"
                   stroke={t.mouth}
-                  strokeWidth="3"
+                  strokeWidth="3.2"
                   strokeLinecap="round"
                 />,
               )}
               {mouth(
                 "open",
-                <path
-                  d="M-8 -2.5 Q0 11 8 -2.5 Q0 0.5 -8 -2.5 Z"
-                  fill={t.mouth}
-                />,
+                <g>
+                  <path
+                    d="M-8.5 -2.5 Q0 12 8.5 -2.5 Q0 0.5 -8.5 -2.5 Z"
+                    fill={t.mouth}
+                  />
+                  <path d="M-4 5 Q0 2.6 4 5 Q0 7.6 -4 5 Z" fill={t.tongue} />
+                </g>,
               )}
               {mouth(
                 "grin",
-                <path
-                  d="M-10.5 -3.5 Q0 14 10.5 -3.5 Q0 0 -10.5 -3.5 Z"
-                  fill={t.mouth}
-                />,
+                <g>
+                  <path
+                    d="M-11 -3.5 Q0 15 11 -3.5 Q0 0 -11 -3.5 Z"
+                    fill={t.mouth}
+                  />
+                  <path
+                    d="M-5.5 6.5 Q0 3.2 5.5 6.5 Q0 9.6 -5.5 6.5 Z"
+                    fill={t.tongue}
+                  />
+                </g>,
               )}
-              {mouth("o", <ellipse rx="3.3" ry="3.8" fill={t.mouth} />)}
-              {mouth("wow", <ellipse rx="4.6" ry="5.8" fill={t.mouth} />)}
+              {mouth(
+                "talk",
+                <g
+                  className="b-talk"
+                  style={{
+                    transformBox: "fill-box",
+                    transformOrigin: "center",
+                  }}
+                >
+                  <ellipse rx="6.4" ry="5.2" fill={t.mouth} />
+                  <ellipse cy="2.4" rx="3.4" ry="1.8" fill={t.tongue} />
+                </g>,
+              )}
+              {mouth("o", <ellipse rx="3.6" ry="4.2" fill={t.mouth} />)}
+              {mouth("wow", <ellipse rx="4.8" ry="6" fill={t.mouth} />)}
               {mouth(
                 "flat",
                 <path
@@ -633,63 +1006,42 @@ export default function Bolo({
                 />,
               )}
               {mouth("small", <circle r="2" fill={t.mouth} />)}
-              {mouth(
-                "eq",
-                <g>
-                  {[-8, -4, 0, 4, 8].map((x, i) => (
-                    <g
-                      key={x}
-                      className="b-meq"
-                      style={{
-                        ...t3(`${x}px 0px`),
-                        animationDelay: `${-i * 0.09}s`,
-                      }}
-                    >
-                      <rect
-                        x={x - 1.2}
-                        y="-5"
-                        width="2.4"
-                        height="10"
-                        rx="1.2"
-                        fill={t.mouth}
-                      />
-                    </g>
-                  ))}
-                </g>,
-              )}
             </g>
           </g>
+          {wear.includes("cap") && <Worn o="cap" />}
+          {wear.includes("chef") && <Worn o="chef" />}
+          {wear.includes("headset") && <Worn o="headset" />}
+          {wear.includes("headphones") && <Worn o="headphones" />}
+          {wear.includes("book") && <Worn o="book" />}
         </motion.g>
       </g>
-      {/* effects */}
       {m.fx === "arcs" &&
-        [0, 0.45].map((d) => (
+        [0, 0.6].map((d) => (
           <path
             key={d}
             className="b-arc"
-            d="M107 57 Q113 66 107 75"
+            d="M108 58 Q114 67 108 76"
             fill="none"
             stroke={t.fx}
             strokeWidth="2.6"
             strokeLinecap="round"
-            style={{ ...t3("100px 66px"), animationDelay: `${d}s` }}
+            style={{ ...t3("100px 67px"), animationDelay: `${d}s`, opacity: 0 }}
           />
         ))}
       {m.fx === "orbit" && (
         <g className="b-orbit" style={t3("60px 70px")}>
-          <circle cx="60" cy="18" r="3.2" fill={t.fx} />
-          <circle cx="111" cy="76" r="2.4" fill={LIME} />
-          <circle cx="16" cy="94" r="2" fill={t.fx} opacity=".7" />
+          <circle cx="60" cy="16" r="3" fill={t.fx} />
+          <circle cx="111" cy="76" r="2.2" fill={GOLD} />
         </g>
       )}
       {m.fx === "zz" &&
-        [0, 1.3].map((d, i) => (
+        [0, 1.4].map((d, i) => (
           <path
             key={d}
             className="b-zz"
             d={i ? "M98 18 h6 l-6 6 h6" : "M88 30 h5 l-5 5 h5"}
             fill="none"
-            stroke={t.fx === "#FFFFFF" ? "#FFFFFF" : "#9AA3FF"}
+            stroke={tone === "white" ? "#FFFFFF" : "#FFB07A"}
             strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -702,9 +1054,9 @@ export default function Bolo({
         ))}
       {m.fx === "sparkle" &&
         [
-          [13, 38, LIME, 0, 1],
-          [108, 30, t.fx, 0.5, 0.8],
-          [106, 98, LIME, 1, 0.6],
+          [12, 40, GOLD, 0, 1],
+          [109, 30, t.fx, 0.5, 0.8],
+          [107, 100, GOLD, 0.9, 0.6],
         ].map(([x, y, c, d, s]) => (
           <g key={String(x)} transform={`translate(${x} ${y}) scale(${s})`}>
             <path
@@ -725,7 +1077,7 @@ export default function Bolo({
 
 /* ---------- Speech ---------- */
 
-/** Words land one at a time — Bolo "says" the line rather than pasting it. */
+/** Bolo "says" the line: a single soft fade, then onDone once a reader would have finished. */
 export function Typed({
   text,
   step = 55,
@@ -737,26 +1089,16 @@ export function Typed({
   onDone?: () => void
   className?: string
 }) {
-  const words = text.split(" ")
+  const words = text.split(" ").length
   const done = useRef(onDone)
   done.current = onDone
   useEffect(() => {
-    const t = window.setTimeout(
-      () => done.current?.(),
-      words.length * step + 420,
-    )
+    const t = window.setTimeout(() => done.current?.(), words * step + 380)
     return () => clearTimeout(t)
-  }, [text, step, words.length])
+  }, [text, step, words])
   return (
-    <span key={text} className={className}>
-      {words.map((w, i) => (
-        <span key={i}>
-          <span className="word" style={{ animationDelay: `${i * step}ms` }}>
-            {w}
-          </span>
-          {i < words.length - 1 ? " " : ""}
-        </span>
-      ))}
+    <span key={text} className={`fade-in ${className}`}>
+      {text}
     </span>
   )
 }
@@ -768,20 +1110,21 @@ export function Bubble({
   className = "",
 }: {
   children: ReactNode
-  tail?: "left" | "top" | "bottom" | "center" | "none"
-  tone?: "light" | "dark" | "cobalt"
+  tail?: "left" | "right" | "top" | "bottom" | "center" | "none"
+  tone?: "light" | "dark" | "brand"
   className?: string
 }) {
   const c = {
     light: "bg-surface text-ink shadow-card",
     dark: "bg-studio-3 text-studio-ink",
-    cobalt: "bg-cobalt text-white",
+    brand: "bg-brand text-white",
   }[tone]
-  const tc = { light: "bg-surface", dark: "bg-studio-3", cobalt: "bg-cobalt" }[
+  const tc = { light: "bg-surface", dark: "bg-studio-3", brand: "bg-brand" }[
     tone
   ]
   const pos = {
-    left: "top-5 -left-1.5",
+    left: "bottom-4 -left-1.5",
+    right: "bottom-4 -right-1.5",
     top: "-top-1.5 left-8",
     bottom: "-bottom-1.5 left-8",
     center: "-bottom-1.5 left-1/2 -translate-x-1/2",
@@ -803,25 +1146,60 @@ export function BoloBadge({
   mood = "idle",
   size = 40,
   tone = "soft",
+  outfit,
 }: {
   mood?: Mood
   size?: number
   tone?: "soft" | "dark" | "white"
+  outfit?: Outfit | Outfit[]
 }) {
-  const bg = { soft: "bg-cobalt-soft", dark: "bg-studio-3", white: "bg-white" }[
+  const bg = { soft: "bg-brand-soft", dark: "bg-studio-3", white: "bg-white" }[
     tone
   ]
   return (
+    // Bolo's silhouette (crown to base) is centred in its own 120 box, so it simply sits in the
+    // middle of the badge: no offset, nothing cropped.
     <span
-      className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full ${bg}`}
+      className={`relative grid shrink-0 place-items-center rounded-full ${bg}`}
       style={{ width: size, height: size }}
     >
-      <span className="translate-y-[12%]">
-        <Bolo mood={mood} size={size * 1.05} ground="none" />
-      </span>
+      <Bolo
+        mood={mood}
+        size={size * 0.9}
+        ground="none"
+        outfit={outfit}
+        className="block"
+      />
     </span>
   )
 }
+
+/* ---------- Costumes: what Bolo wears when it plays a role ---------- */
+export const ENV_OUTFIT: Record<Env, Outfit[]> = {
+  market: ["bag"],
+  food: ["chai"],
+  travel: ["cap"],
+  health: ["stethoscope"],
+  money: ["glasses", "coin"],
+  home: ["phone"],
+}
+/** A job's own costume wins (chef for a kitchen, headset for a care line); otherwise the setting decides. */
+export const outfitFor = (
+  env: Env,
+  format: Format,
+  costume?: Outfit[],
+): Outfit[] =>
+  costume?.length
+    ? costume
+    : format === "LINES"
+      ? ["book"]
+      : format === "INTERVIEW"
+        ? env === "health" || env === "money"
+          ? ENV_OUTFIT[env]
+          : ["headset"]
+        : format === "ROOM"
+          ? ["headphones"]
+          : ENV_OUTFIT[env]
 
 /* ---------- Voice level ---------- */
 
@@ -857,7 +1235,7 @@ export function useVoiceLevel(
           speaking = !speaking || Math.random() < 0.25
           next =
             t +
-            (speaking ? 0.35 + Math.random() * 0.8 : 0.1 + Math.random() * 0.28)
+            (speaking ? 0.6 + Math.random() * 1.6 : 0.25 + Math.random() * 0.4)
         }
         const syll = Math.max(
           0,
@@ -915,10 +1293,76 @@ export function useVoiceLevel(
   return mv
 }
 
+/* ---------- Active listening: Bolo reacts the way a person on the other end would ---------- */
+export type Reaction = {
+  mood: Mood
+  say?: string
+} | null
+const BACKCHANNEL: Record<string, string[]> = {
+  hi: ["हाँ…", "अच्छा", "हम्म", "हाँ जी", "अच्छा?"],
+  mr: ["हो…", "बरं", "हम्म", "हो का?"],
+  ta: ["ம்ம்…", "சரி", "ஆமா", "அப்படியா?"],
+  bn: ["হ্যাঁ…", "আচ্ছা", "হুম", "তাই?"],
+  te: ["అవును…", "సరే", "హ్మ్", "అలాగా?"],
+  kn: ["ಹೌದು…", "ಸರಿ", "ಹ್ಮ್", "ಹೌದಾ?"],
+  ml: ["ഉം…", "ശരി", "അതെ", "ആണോ?"],
+  gu: ["હા…", "બરાબર", "હમ્મ", "એમ?"],
+  pa: ["ਹਾਂ…", "ਅੱਛਾ", "ਹੰਮ", "ਸੱਚੀ?"],
+  or: ["ହଁ…", "ଆଚ୍ଛା", "ହମ୍", "ସତରେ?"],
+  ur: ["جی…", "اچھا", "ہمم", "اچھا؟"],
+  en: ["Mm-hmm", "Right", "Okay…", "Really?"],
+}
+/** While you speak: a nod and a soft "haan" after a few seconds of talk, a curious tilt now and then.
+    It reads only the live level — nothing you say is stored or sent. */
+export function useListening(
+  level: MotionValue<number>,
+  active: boolean,
+  lang: string,
+): Reaction {
+  const [r, setR] = useState<Reaction>(null)
+  useEffect(() => {
+    if (!active) {
+      setR(null)
+      return
+    }
+    const words = BACKCHANNEL[lang] ?? BACKCHANNEL.en
+    let talk = 0
+    let dip = 0
+    let n = 0
+    let last = performance.now()
+    let clear = 0
+    const id = window.setInterval(() => {
+      const v = level.get()
+      if (v > 0.14) {
+        talk += 200
+        dip = 0
+      } else dip += 200
+      const now = performance.now()
+      if (talk >= 2000 && dip >= 200 && now - last > 2600) {
+        const curious = n % 4 === 3
+        setR({
+          mood: curious ? "curious" : "nod",
+          say: words[curious ? words.length - 1 : n % (words.length - 1)],
+        })
+        n++
+        talk = 0
+        last = now
+        clearTimeout(clear)
+        clear = window.setTimeout(() => setR(null), 1500)
+      }
+    }, 200)
+    return () => {
+      clearInterval(id)
+      clearTimeout(clear)
+    }
+  }, [active, lang, level])
+  return r
+}
+
 /* ---------- Voice ring: the live waveform wrapped around Bolo ---------- */
 
 /** rest breathes · wait opens up for your turn · you follows your level · bolo pulses with Bolo's voice
-    think travels and regroups · alert distorts (orange) · done blooms once, then settles (lime) */
+    think travels and regroups · alert holds amber, calmly · done blooms once, then settles */
 export type RingMode = "rest" | "wait" | "you" | "bolo" | "think" | "alert" | "done"
 
 export function VoiceRing({
@@ -960,44 +1404,37 @@ export function VoiceRing({
         md === "you"
           ? (level?.get() ?? 0)
           : md === "bolo"
-            ? 0.35 +
-              0.3 * Math.max(0, Math.sin(t * 26)) * Math.abs(Math.sin(t * 3.1))
+            ? 0.3 +
+              0.25 * Math.max(0, Math.sin(t * 14)) * Math.abs(Math.sin(t * 2.6))
             : md === "wait"
-              ? 0.2 + 0.06 * Math.sin(t * 2.4)
+              ? 0.18 + 0.05 * Math.sin(t * 2.2)
               : md === "think"
-                ? 0.55
+                ? 0.45
                 : md === "alert"
-                  ? 0.7
+                  ? 0.32 + 0.04 * Math.sin(t * 1.6)
                   : md === "done"
-                    ? 0.16 + 0.6 * Math.exp(-ts * 3)
-                    : 0.06 + 0.025 * Math.sin(t * 1.6)
-      // Listening expansion: the ring itself opens outward when it's your turn.
-      open += ((md === "wait" ? 9 : md === "you" ? 5 : 0) - open) * 0.08
+                    ? 0.14 + 0.5 * Math.exp(-ts * 3)
+                    : 0.06 + 0.02 * Math.sin(t * 1.4)
+      open += ((md === "wait" ? 8 : md === "you" ? 4 : 0) - open) * 0.08
       const r0 = inner + (reduce ? 0 : open)
-      const scale = md === "rest" ? 10 : md === "wait" ? 24 : 34
+      const scale = md === "rest" ? 10 : md === "wait" ? 22 : 30
       let d = ""
       for (let i = 0; i < bars; i++) {
         const a = (i / bars) * Math.PI * 2 - Math.PI / 2
         const n =
-          md === "alert"
-            ? Math.random()
-            : md === "think"
-              ? 0.12 +
-                Math.pow(Math.max(0, Math.cos(a + Math.PI / 2 - t * 3.4)), 10)
-              : md === "wait" || md === "done"
-                ? 0.82 + 0.18 * Math.sin(i * 0.9 + t * 2)
-                : 0.5 +
-                  0.5 *
-                    Math.sin(i * 1.7 + t * 5.3) *
-                    Math.sin(i * 0.37 - t * 3.1)
+          md === "think"
+            ? 0.12 +
+              Math.pow(Math.max(0, Math.cos(a + Math.PI / 2 - t * 2.6)), 10)
+            : md === "wait" || md === "done" || md === "alert"
+              ? 0.82 + 0.18 * Math.sin(i * 0.9 + t * 1.6)
+              : 0.5 +
+                0.5 * Math.sin(i * 1.7 + t * 4.6) * Math.sin(i * 0.37 - t * 2.8)
         const target = reduce
           ? md === "rest"
             ? 3
             : 6
           : 2.5 + lv * (0.3 + 0.7 * n) * scale
-        amps[i] = reduce
-          ? target
-          : amps[i] + (target - amps[i]) * (md === "alert" ? 0.6 : 0.22)
+        amps[i] = reduce ? target : amps[i] + (target - amps[i]) * 0.2
         const ca = Math.cos(a)
         const sa = Math.sin(a)
         d += `M${(c + ca * r0).toFixed(1)} ${(c + sa * r0).toFixed(1)}L${(c + ca * (r0 + amps[i])).toFixed(1)} ${(c + sa * (r0 + amps[i])).toFixed(1)}`
@@ -1005,7 +1442,7 @@ export function VoiceRing({
       path.current?.setAttribute("d", d)
       glow.current?.setAttribute(
         "opacity",
-        String(md === "rest" ? 0.1 : 0.16 + lv * 0.45),
+        String(md === "rest" ? 0.1 : 0.14 + lv * 0.4),
       )
       if (!reduce) raf = requestAnimationFrame(frame)
     }
@@ -1014,21 +1451,15 @@ export function VoiceRing({
     // Under reduced motion the ring is drawn once per mode, as a static, colour-coded ring.
   }, [size, inner, bars, level, reduce, reduce ? mode : null])
   const glowColor =
-    mode === "alert"
-      ? "#FF5A1F"
-      : mode === "done"
-        ? "#C6F432"
-        : mode === "bolo" || mode === "think"
-          ? "#9AA3FF"
-          : "#2B3BFF"
+    mode === "alert" ? "#E39A12" : mode === "done" ? "#2FBF85" : "#F5640F"
   const stroke = {
-    rest: "#3A3D4C",
-    wait: "#5866FF",
+    rest: "#3B322A",
+    wait: "#FF8338",
     you: `url(#${uid}you)`,
-    bolo: "#9AA3FF",
-    think: "#9AA3FF",
-    alert: "#FF5A1F",
-    done: "#C6F432",
+    bolo: "#FFB07A",
+    think: "#FFB07A",
+    alert: "#E39A12",
+    done: "#2FBF85",
   }[mode]
   return (
     <svg
@@ -1040,11 +1471,15 @@ export function VoiceRing({
     >
       <defs>
         <linearGradient id={`${uid}you`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7F8BFF" />
-          <stop offset="1" stopColor="#3445FF" />
+          <stop offset="0" stopColor="#FFC24A" />
+          <stop offset="1" stopColor="#F5640F" />
         </linearGradient>
+        {/* Eased falloff, no flat core: reads as light, not as another ring */}
         <radialGradient id={`${uid}glow`}>
-          <stop offset="0.45" stopColor={glowColor} stopOpacity="0.9" />
+          <stop offset="0" stopColor={glowColor} stopOpacity="0.75" />
+          <stop offset="0.25" stopColor={glowColor} stopOpacity="0.55" />
+          <stop offset="0.5" stopColor={glowColor} stopOpacity="0.26" />
+          <stop offset="0.72" stopColor={glowColor} stopOpacity="0.08" />
           <stop offset="1" stopColor={glowColor} stopOpacity="0" />
         </radialGradient>
       </defs>
@@ -1055,7 +1490,7 @@ export function VoiceRing({
         r={size / 2}
         fill={`url(#${uid}glow)`}
         opacity="0.1"
-        style={{ transition: "opacity 120ms linear" }}
+        style={{ transition: "opacity 160ms linear" }}
       />
       <path
         ref={path}
@@ -1089,19 +1524,19 @@ export const BOLO_STATES: Record<BoloState, {
     mood: "speak",
     ring: "bolo",
     label: "Speaking",
-    note: "Plays the other person. Mouth and ring pulse with its voice.",
+    note: "Plays the other person. Mouth and ring move with its voice.",
   },
   listening: {
     mood: "listen",
     ring: "wait",
     label: "Listening",
-    note: "Your turn. Bolo leans in and the ring opens up to wait.",
+    note: "Your turn. Bolo leans in, brows up, the ring opens to wait.",
   },
   recording: {
     mood: "listen",
     ring: "you",
     label: "Recording",
-    note: "Crown and ring follow your voice, frame by frame.",
+    note: "Crown and ring follow your voice. Nods and a soft ‘haan’ as you talk.",
   },
   processing: {
     mood: "think",
@@ -1113,13 +1548,13 @@ export const BOLO_STATES: Record<BoloState, {
     mood: "happy",
     ring: "done",
     label: "Passed",
-    note: "Clear take, saved. Lime, one hop, then calm.",
+    note: "Clear take, saved. One hop, then calm.",
   },
   retry: {
     mood: "concern",
     ring: "alert",
     label: "Retry suggested",
-    note: "Noise or a dropped mic. Orange: worried for you, never at you.",
+    note: "Noise or a dropped mic. Calm amber: worried for you, never at you.",
   },
   coaching: {
     mood: "coach",
@@ -1130,7 +1565,7 @@ export const BOLO_STATES: Record<BoloState, {
   complete: {
     mood: "cheer",
     ring: "done",
-    label: "Session complete",
+    label: "Scene complete",
     note: "Every turn recorded. A rare, earned celebration.",
   },
 }
@@ -1140,13 +1575,18 @@ export function BoloStage({
   state,
   level,
   size = 248,
-  tone = "cobalt",
+  tone = "brand",
+  react,
+  outfit,
   className = "",
+  /** A momentary listening reaction (nod, tilt) with an optional backchannel word. */
 }: {
   state: BoloState
   level?: MotionValue<number>
   size?: number
   tone?: BoloTone
+  react?: Reaction
+  outfit?: Outfit | Outfit[]
   className?: string
 }) {
   const st = BOLO_STATES[state]
@@ -1166,20 +1606,29 @@ export function BoloStage({
         />
       </div>
       <Bolo
-        mood={st.mood}
+        mood={react?.mood ?? st.mood}
         size={size * 0.52}
         tone={tone}
         level={state === "recording" ? level : undefined}
         ground="none"
+        outfit={outfit}
       />
+      {react?.say && (
+        <span
+          key={react.say}
+          className="rise absolute top-[14%] right-[2%] rounded-full bg-white px-3 py-1.5 text-14 font-medium text-ink shadow-card"
+        >
+          {react.say}
+        </span>
+      )}
     </div>
   )
 }
 
 /* ---------- Confetti: palette bits and ₹ coins, burst from a point ---------- */
 export function Confetti({
-  n = 28,
-  colors = ["#2B3BFF", "#C6F432", "#FF5A1F", "#0E0F14", "#FFFFFF"],
+  n = 26,
+  colors = ["#F5640F", "#FFC24A", "#18A06B", "#1C1713", "#FFFFFF"],
   coins = true,
   delay = 0,
 }: {
@@ -1192,14 +1641,14 @@ export function Confetti({
     () =>
       Array.from({ length: n }, (_, i) => {
         const a = (i / n) * Math.PI * 2 + Math.random() * 0.4
-        const d = 110 + Math.random() * 130
+        const d = 110 + Math.random() * 120
         return {
           x: Math.cos(a) * d,
           y: Math.sin(a) * d * 0.9 - 40,
-          r: (Math.random() - 0.5) * 600,
+          r: (Math.random() - 0.5) * 540,
           coin: coins && i % 4 === 0,
           c: colors[i % colors.length],
-          w: 6 + Math.random() * 7,
+          w: 6 + Math.random() * 6,
           delay: delay + Math.random() * 180,
         }
       }),
@@ -1213,7 +1662,7 @@ export function Confetti({
           aria-hidden
           className={`burst pointer-events-none absolute top-1/2 left-1/2 ${
             b.coin
-              ? "grid h-5 w-5 place-items-center rounded-full text-11 font-bold text-ink shadow-[inset_0_-2px_0_rgba(0,0,0,.18)]"
+              ? "grid h-5 w-5 place-items-center rounded-full text-11 font-semibold text-wait-ink shadow-[inset_0_-2px_0_rgba(0,0,0,.14)]"
               : "rounded-[2px]"
           }`}
           style={
@@ -1222,7 +1671,7 @@ export function Confetti({
               "--y": `${b.y}px`,
               "--r": `${b.r}deg`,
               animationDelay: `${b.delay}ms`,
-              background: b.coin ? "#C6F432" : b.c,
+              background: b.coin ? "#FFC24A" : b.c,
               width: b.coin ? undefined : b.w,
               height: b.coin ? undefined : b.w * 0.5,
             } as CSSProperties

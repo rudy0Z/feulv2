@@ -6,7 +6,14 @@ import {
 } from "motion/react"
 import { FORMAT_LABEL, LANGS, type Job, type Prompt } from "../state/model"
 import { sel, useStore } from "../state/store"
-import { BoloStage, Typed, useVoiceLevel, type BoloState } from "../ui/Bolo"
+import {
+  BoloStage,
+  Typed,
+  outfitFor,
+  useListening,
+  useVoiceLevel,
+  type BoloState,
+} from "../ui/Bolo"
 import {
   Btn,
   Dialog,
@@ -132,7 +139,7 @@ export default function Studio() {
             key={c.id}
             className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
               c.state !== "ready"
-                ? "bg-cobalt-hi"
+                ? "bg-brand-hi"
                 : i === sess.index
                   ? "bg-white"
                   : "bg-white/12"
@@ -177,7 +184,7 @@ function MicSource() {
       )}
       className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-12 font-semibold transition-colors ${
         real
-          ? "bg-cobalt text-white"
+          ? "bg-brand text-white"
           : "bg-white/8 text-studio-ink-2 hover:text-studio-ink"
       }`}
     >
@@ -233,20 +240,17 @@ function RecordButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label ?? (on ? "Stop recording" : "Start recording")}
-      className={`relative grid h-[76px] w-[76px] place-items-center rounded-full transition-[background-color,box-shadow,scale,opacity] duration-200 ease-(--ease-spring) active:not-disabled:scale-95 disabled:opacity-30 ${
-        on ? "bg-white" : "bg-cobalt shadow-cobalt"
+      className={`relative grid h-[72px] w-[72px] place-items-center rounded-full transition-[background-color,box-shadow,scale,color] duration-300 ease-(--ease-spring) active:not-disabled:scale-95 disabled:bg-white/10 disabled:text-studio-ink-3 disabled:shadow-none ${
+        on
+          ? "bg-white text-brand shadow-[0_0_0_8px_rgba(245,100,15,.18)]"
+          : "bg-brand text-white shadow-brand"
       }`}
     >
-      {on && (
-        <span
-          aria-hidden
-          className="ping-soft absolute inset-0 rounded-full bg-cobalt/35"
-        />
-      )}
+      {/* Steady halo while recording: calm, no ping or flashing */}
       {on ? (
-        <span className="relative h-6 w-6 rounded-[7px] bg-cobalt" />
+        <span className="relative h-6 w-6 rounded-[7px] bg-current" />
       ) : (
-        <Icon n="mic" s={28} className="text-white" />
+        <Icon n="mic" s={28} />
       )}
     </button>
   )
@@ -276,33 +280,41 @@ function Calibrate() {
   }, [ok, step, a])
   const state: BoloState = ok ? "passed" : rec ? "recording" : "coaching"
   return (
-    <div className="flex flex-1 flex-col items-center px-6 pt-4 pb-8 text-center">
+    <div className="flex flex-1 flex-col items-center px-5 pt-5 pb-[calc(env(safe-area-inset-bottom)+20px)] text-center">
       <Tag tone="studio">Level check · {step + 1} of 2</Tag>
-      <BoloStage state={state} level={level} size={232} className="mt-2" />
-      <h2 className="semi -mt-1 max-w-[24ch] text-24 font-bold">
-        Hold the phone about 15 cm away and say
-      </h2>
-      <p
-        key={step}
-        lang={j.lang}
-        className="script rise mt-3 text-24 font-semibold text-peri"
-      >
-        “{phrases[step]}”
-      </p>
-      <p aria-live="polite" className="mt-3 h-5 text-14 text-studio-ink-2">
-        {ok
-          ? "That is your level. Bolo will remember it."
-          : rec
-            ? "Good. Keep going at this volume."
-            : "Only a check. Not submitted and not paid."}
-      </p>
-      <div className="mt-auto pt-6">
+
+      {/* Same rhythm as a scene turn: one centred group, controls docked below */}
+      <div className="flex flex-1 flex-col items-center justify-center">
+        <BoloStage state={state} level={level} size={172} />
+        <p className="mt-1 text-14 text-studio-ink-2">
+          Hold the phone about 15 cm away and say
+        </p>
+        <p
+          key={step}
+          lang={j.lang}
+          className="script rise mt-3 max-w-[22ch] text-24 font-semibold text-white"
+        >
+          “{phrases[step]}”
+        </p>
+        <p aria-live="polite" className="mt-3 h-5 text-14 text-brand-tint">
+          {ok
+            ? "That is your level. Bolo will remember it."
+            : rec
+              ? "Good. Keep going at this volume."
+              : "Only a check. Not submitted and not paid."}
+        </p>
+      </div>
+
+      <div className="flex flex-col items-center gap-2.5">
         <RecordButton
           on={rec}
           disabled={ok}
           label={rec ? "Listening" : "Start the level check"}
           onClick={() => !rec && setRec(true)}
         />
+        <span className="text-12 text-studio-ink-2">
+          {rec ? "Listening…" : "Tap to test your level"}
+        </span>
       </div>
     </div>
   )
@@ -357,6 +369,8 @@ function Capture() {
   const [noiseShown, setNoiseShown] = useState(false)
   const level = useLevel(phase === "recording")
   const quiet = useQuiet(level, phase === "recording")
+  // Calm backchannel while you talk: a nod and a soft "haan", never continuous motion.
+  const react = useListening(level, phase === "recording" && !quiet, j.lang)
 
   // Prototype hooks from the Simulate panel
   useEffect(() => {
@@ -464,100 +478,98 @@ function Capture() {
                         : "Your turn · Bolo is listening"
 
   return (
-    <div className="flex flex-1 flex-col px-5 pt-1 pb-7">
-      {clip.prompt.chapter && (
-        <div className="eyebrow mt-2 text-center text-studio-ink-3">
-          Chapter · {clip.prompt.chapter}
-        </div>
-      )}
-      <div className="flex flex-col items-center">
-        <BoloStage state={state} level={level} size={228} />
+    <div className="flex flex-1 flex-col px-5 pt-2 pb-[calc(env(safe-area-inset-bottom)+20px)]">
+      {/* The exchange, read top to bottom as one turn: Bolo, what Bolo said, what you say back.
+          It is centred as a single group, so tall phones get even breathing room, not a dead band
+          between the line and your reply. */}
+      <div className="flex flex-1 flex-col items-center justify-center text-center">
+        {clip.prompt.chapter && (
+          <span className="mb-1 inline-flex items-center rounded-full bg-white/8 px-3 py-1 text-12 font-medium text-studio-ink-2">
+            {clip.prompt.chapter}
+          </span>
+        )}
+        <BoloStage
+          state={state}
+          level={level}
+          size={172}
+          react={react}
+          outfit={outfitFor(j.env, j.format, j.costume)}
+        />
         <div
           aria-live="polite"
-          className={`-mt-2 flex h-6 items-center gap-2 text-14 font-medium ${
+          className={`-mt-1 flex h-6 items-center justify-center gap-2 text-14 font-medium ${
             warn
-              ? "text-orange"
+              ? "text-wait"
               : phase === "recorded"
-                ? "text-lime"
+                ? "text-money"
                 : "text-studio-ink-2"
           }`}
         >
           {phase === "recording" && (
-            <span className="pulse-dot h-2 w-2 rounded-full bg-cobalt-hi" />
+            <span className="pulse-dot h-2 w-2 rounded-full bg-brand-hi" />
           )}
           {status}
           {(phase === "recording" || phase === "paused") && (
             <span className="tnum text-studio-ink">{mmss(t)}</span>
           )}
         </div>
-      </div>
 
-      {/* What Bolo says: the other person's line, a direction, or what went wrong */}
-      <div
-        className={`mt-4 rounded-lg p-4 transition-[background-color,box-shadow] duration-300 ${
-          aside
-            ? warn
-              ? "bg-orange/10 shadow-[inset_0_0_0_1px_rgb(255_90_31/.4)]"
-              : "bg-cobalt/12 shadow-[inset_0_0_0_1px_rgb(88_102_255/.35)]"
-            : "bg-studio-2 shadow-[inset_0_0_0_1px_var(--color-studio-line)]"
-        }`}
-      >
-        <div className="flex min-h-5 items-center justify-between gap-3">
-          <span
-            className={`eyebrow ${aside && warn ? "text-orange" : "text-peri"}`}
+        <div className="mt-3 max-w-[32ch]">
+          <p
+            lang={aside || !c.native ? "en" : j.lang}
+            className={`leading-snug font-medium text-pretty ${
+              aside
+                ? warn
+                  ? "text-18 text-wait"
+                  : "text-18 text-brand-tint"
+                : c.native
+                  ? "script text-24 text-white"
+                  : "text-18 text-studio-ink-2"
+            }`}
           >
-            {aside ? "Bolo" : c.who}
-          </span>
-          {!aside && phase !== "ai" && (
-            <button
-              onClick={() => setPhase("ai")}
-              disabled={phase === "recording"}
-              className="-m-2 inline-flex items-center gap-1 rounded-full p-2 text-12 font-semibold text-studio-ink-2 hover:text-studio-ink disabled:opacity-35"
-            >
-              <Icon n="retry" s={13} /> Hear again
-            </button>
-          )}
+            {aside ? (
+              <Typed key={phase} text={aside} step={26} />
+            ) : phase === "ai" ? (
+              <Typed
+                text={c.line}
+                step={c.native ? 120 : 70}
+                onDone={() => setPhase("idle")}
+              />
+            ) : (
+              c.line
+            )}
+          </p>
+          <div className="mt-2 flex items-center justify-center gap-2.5 text-12 text-studio-ink-3">
+            <span>{aside ? "Bolo" : c.who}</span>
+            {!aside && phase !== "ai" && (
+              <button
+                onClick={() => setPhase("ai")}
+                disabled={phase === "recording"}
+                className="inline-flex items-center gap-1 rounded-full bg-white/8 px-2.5 py-1 text-12 font-medium text-studio-ink-2 hover:text-studio-ink disabled:opacity-35"
+              >
+                <Icon n="retry" s={12} /> Hear again
+              </button>
+            )}
+          </div>
         </div>
-        <p
-          lang={aside || !c.native ? "en" : j.lang}
-          className={`mt-1.5 min-h-[52px] leading-snug font-medium text-pretty ${
-            !aside && c.native ? "script text-20" : "text-18"
+        {/* Your reply sits directly under the line it answers */}
+        <div
+          className={`grad-studio-card mt-6 w-full rounded-lg px-5 py-4 text-center transition-opacity duration-300 ${
+            phase === "ai" || aside ? "opacity-50" : ""
           }`}
         >
-          {aside ? (
-            <Typed key={phase} text={aside} step={26} />
-          ) : phase === "ai" ? (
-            <Typed
-              text={c.line}
-              step={c.native ? 120 : 70}
-              onDone={() => setPhase("idle")}
-            />
-          ) : (
-            c.line
-          )}
-        </p>
-      </div>
-
-      {/* Your turn */}
-      <div
-        className={`mt-2.5 flex gap-3 rounded-lg bg-white/[.06] p-4 transition-opacity duration-300 ${
-          phase === "ai" || aside ? "opacity-45" : ""
-        }`}
-      >
-        <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-cobalt text-white">
-          <Icon n="mic" s={15} stroke={2} />
-        </span>
-        <div className="min-w-0">
-          <div className="eyebrow text-studio-ink-2">
-            {lines ? "Read this" : "Your reply"} ·{" "}
+          <div className="text-12 font-medium text-brand-tint">
+            {lines ? "Read aloud" : "You"} ·{" "}
             <span className="tnum">
               {sess.index + 1} of {sess.clips.length}
             </span>
           </div>
           <p
             lang={lines ? j.lang : "en"}
-            className={`mt-1 leading-snug ${
-              lines ? "script text-24 font-semibold" : "text-16"
+            className={`mt-1.5 leading-snug text-pretty ${
+              lines
+                ? "script text-24 font-semibold text-white"
+                : "text-18 font-medium text-white"
             }`}
           >
             {clip.prompt.text}
@@ -565,7 +577,8 @@ function Capture() {
         </div>
       </div>
 
-      <div className="mt-auto pt-5">
+      {/* Controls dock: in the thumb zone, above the home indicator */}
+      <div className="flex flex-col pt-5">
         {phase === "noise" || phase === "miclost" ? (
           <div className="flex gap-2">
             <Btn full size="lg" v="white" onClick={() => setPhase("recording")}>
@@ -602,7 +615,7 @@ function Capture() {
             {phase === "loading" ? "Trying again…" : "Try again"}
           </Btn>
         ) : (
-          <div className="grid grid-cols-3 items-center">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center">
             <div>
               {phase === "recording" && (
                 <button
@@ -615,7 +628,7 @@ function Capture() {
               {phase === "paused" && (
                 <button
                   onClick={() => setPhase("recording")}
-                  className="h-11 text-14 font-semibold text-peri"
+                  className="h-11 text-14 font-semibold text-brand-tint"
                 >
                   Continue
                 </button>
@@ -637,7 +650,7 @@ function Capture() {
               {phase === "recorded" ? (
                 <button
                   onClick={next}
-                  className="pop-in grid h-[76px] w-[76px] place-items-center rounded-full bg-white text-ink transition-transform duration-200 ease-(--ease-spring) active:scale-95"
+                  className="pop-in grid h-[72px] w-[72px] place-items-center rounded-full bg-white text-ink transition-transform duration-200 ease-(--ease-spring) active:scale-95"
                   aria-label={
                     allDone
                       ? "Check your takes"
@@ -658,7 +671,11 @@ function Capture() {
                 />
               )}
             </div>
-            <div className="text-right text-12 font-semibold text-studio-ink-2">
+            <div />
+            <p
+              aria-hidden
+              className="col-start-2 mt-2 h-4 text-center text-12 font-medium whitespace-nowrap text-studio-ink-2"
+            >
               {phase === "recorded"
                 ? allDone
                   ? "Check takes"
@@ -672,7 +689,7 @@ function Capture() {
                   : phase === "recording"
                     ? "Tap to finish"
                     : ""}
-            </div>
+            </p>
           </div>
         )}
       </div>
@@ -686,7 +703,7 @@ function RoomConsent() {
   const [ok, setOk] = useState<boolean[]>([true, false, false])
   const [minor, setMinor] = useState<number | null>(null)
   return (
-    <div className="flex flex-1 flex-col px-6 pt-6 pb-8">
+    <div className="flex flex-1 flex-col px-5 pt-6 pb-[calc(env(safe-area-inset-bottom)+28px)]">
       <span className="eyebrow text-studio-ink-3">
         Room · everyone consents first
       </span>
@@ -707,7 +724,7 @@ function RoomConsent() {
             <div className="flex items-center gap-3">
               <span
                 className={`tnum grid h-9 w-9 place-items-center rounded-full text-14 font-semibold ${
-                  v ? "bg-lime text-ink" : "bg-white/8 text-studio-ink"
+                  v ? "bg-money text-ink" : "bg-white/8 text-studio-ink"
                 }`}
               >
                 {v ? <Icon n="check" s={16} stroke={2.4} /> : i + 1}
@@ -746,7 +763,7 @@ function RoomConsent() {
       </ul>
       {minor != null && (
         <>
-          <p className="mt-3 rounded-lg bg-orange/12 p-4 text-14 text-orange">
+          <p className="mt-3 rounded-lg bg-wait/12 p-4 text-14 text-wait">
             Feul is for adults only right now. Invite another adult to join, or
             save this session and come back within 24h.
           </p>
@@ -754,7 +771,7 @@ function RoomConsent() {
             onClick={() => (
               setMinor(null), setOk(ok.map((x, k) => (k === minor ? false : x)))
             )}
-            className="mt-2 self-start text-14 font-semibold text-peri"
+            className="mt-2 self-start text-14 font-semibold text-brand-tint"
           >
             Another adult will join instead
           </button>
@@ -795,7 +812,7 @@ function RoomCapture() {
     a.toReview()
   }
   return (
-    <div className="flex flex-1 flex-col px-6 pt-6 pb-8">
+    <div className="flex flex-1 flex-col px-5 pt-6 pb-[calc(env(safe-area-inset-bottom)+28px)]">
       <span className="eyebrow text-studio-ink-3">One continuous take</span>
       <h2 className="semi mt-3 text-24 leading-snug font-bold">
         Talk about your weekend plans. Move on when the conversation does,
@@ -807,14 +824,14 @@ function RoomCapture() {
             key={c.id}
             className={`flex items-center gap-3 rounded-lg bg-studio-2 p-3.5 transition-[box-shadow,opacity] duration-200 ${
               i === spk && rec
-                ? "shadow-[inset_0_0_0_2px_var(--color-cobalt-hi)]"
+                ? "shadow-[inset_0_0_0_2px_var(--color-brand-hi)]"
                 : "shadow-[inset_0_0_0_1px_var(--color-studio-line)]"
             } ${i < spk ? "opacity-55" : ""}`}
           >
             <span
               className={`h-2.5 w-2.5 rounded-full ${
                 i === spk && rec
-                  ? "pulse-dot bg-cobalt-hi"
+                  ? "pulse-dot bg-brand-hi"
                   : i < spk
                     ? "bg-studio-ink-3"
                     : "ring-1 ring-studio-ink-3"
@@ -848,7 +865,7 @@ function RoomCapture() {
           <button
             disabled={!rec}
             onClick={() => setSpk((x) => (x + 1) % sess.clips.length)}
-            className="text-14 font-semibold text-peri disabled:text-studio-ink-3"
+            className="text-14 font-semibold text-brand-tint disabled:text-studio-ink-3"
           >
             Next speaker →
           </button>
@@ -882,7 +899,7 @@ function LevelBars({ level }: { level: MotionValue<number> }) {
         <span
           key={i}
           className={`flex-1 rounded-sm ${
-            i / 20 < v ? (i > 16 ? "bg-orange" : "bg-cobalt-hi") : "bg-white/10"
+            i / 20 < v ? (i > 16 ? "bg-wait" : "bg-brand-hi") : "bg-white/10"
           }`}
         />
       ))}

@@ -92,7 +92,7 @@ export default function Sheets() {
               <span className="block truncate text-16 font-semibold">
                 {s.upi?.vpa}
               </span>
-              <span className="flex items-center gap-1 text-12 font-medium text-lime-ink">
+              <span className="flex items-center gap-1 text-12 font-medium text-money-ink">
                 <Icon n="check" s={13} stroke={2.2} /> {s.upi?.name} · name
                 matched
               </span>
@@ -126,7 +126,7 @@ const NOTICE_ICON: Record<string, string> = {
   withdrawal: "bank",
   withdraw: "bank",
   profile: "shield",
-  detail: "missions",
+  detail: "scenes",
 }
 const noticeIcon = (n: Notice) =>
   "tab" in n.target ? "wallet" : (NOTICE_ICON[n.target.name] ?? "bell")
@@ -157,7 +157,7 @@ function NotificationsSheet() {
               <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
                 <Icon n={noticeIcon(n)} s={18} />
                 {n.unread && (
-                  <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-cobalt ring-2 ring-surface" />
+                  <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-brand ring-2 ring-surface" />
                 )}
               </span>
               <span className="min-w-0 flex-1">
@@ -196,7 +196,7 @@ function EditSheet() {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 h-12 w-full rounded-md bg-surface px-4 text-16 shadow-[inset_0_0_0_1.5px_var(--color-line-2)] outline-none transition-shadow focus:shadow-[inset_0_0_0_2px_var(--color-cobalt)]"
+          className="mt-1 h-12 w-full rounded-md bg-surface px-4 text-16 shadow-[inset_0_0_0_1.5px_var(--color-line-2)] outline-none transition-shadow focus:shadow-[inset_0_0_0_2px_var(--color-brand)]"
         />
       </label>
       <div className="mt-5 text-12 font-medium text-ink-2">
@@ -220,7 +220,7 @@ function EditSheet() {
         ))}
       </div>
       <p className="mt-3 text-12 leading-snug text-ink-3">
-        Changing language shows missions in that language. You'll be asked to
+        Changing language shows scenes in that language. You'll be asked to
         consent again in the new language before recording.
       </p>
       <Btn
@@ -252,7 +252,7 @@ function PrefsSheet() {
   const rows: [keyof typeof p, string, string][] = [
     ["review", "Review results", "Approved, retake needed, appeals"],
     ["pay", "Payments", "Withdrawal processing, paid, failed"],
-    ["jobs", "New missions in my language", "At most once a day"],
+    ["jobs", "New scenes in my language", "At most once a day"],
     ["data", "Data-rights updates", "Required for deletion receipts"],
   ]
   return (
@@ -302,7 +302,7 @@ function BoloSheet() {
     [
       "clock",
       `${inr(BASE_RATE)} per hour of speaking`,
-      "Every mission is priced from its realistic active minutes, retries included.",
+      "Every scene is priced from its realistic active minutes, retries included.",
     ],
     [
       "spark",
@@ -312,7 +312,7 @@ function BoloSheet() {
     [
       "lock",
       "Guaranteed once checks pass",
-      "The amount is locked when you start. It cannot drop mid-mission.",
+      "The amount is locked when you start. It cannot drop mid-scene.",
     ],
     [
       "gift",
@@ -346,7 +346,7 @@ function BoloSheet() {
         ))}
       </ul>
 
-      <Label className="mt-6 mb-2.5">Mission lengths</Label>
+      <Label className="mt-6 mb-2.5">Scene lengths</Label>
       <div className="grid grid-cols-3 gap-2">
         {(["quick", "core", "deep"] as Length[]).map((k) => (
           <div key={k} className="rounded-md bg-surface-2 p-3">

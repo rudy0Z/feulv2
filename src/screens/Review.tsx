@@ -9,7 +9,6 @@ import {
   Card,
   Icon,
   Label,
-  Meter,
   Money,
   Notice,
   Player,
@@ -29,9 +28,9 @@ function StudioStatus({ k }: { k: ClipState }) {
   const [l] = STATUS[k] ?? [k]
   const c =
     k === "upload_failed"
-      ? "bg-orange/15 text-orange"
+      ? "bg-wait/15 text-wait"
       : k === "uploading"
-        ? "bg-cobalt/25 text-peri"
+        ? "bg-brand/25 text-brand-tint"
         : "bg-white/8 text-studio-ink-2"
   return (
     <span
@@ -99,8 +98,8 @@ export default function Review() {
 
       <div className="mt-3 flex flex-col gap-2 px-5">
         {failed && (
-          <div className="flex gap-3 rounded-lg bg-orange/10 p-4 shadow-[inset_0_0_0_1px_rgb(255_90_31/.4)]">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-orange text-white">
+          <div className="flex gap-3 rounded-lg bg-wait/10 p-4 shadow-[inset_0_0_0_1px_rgb(255_90_31/.4)]">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-wait text-white">
               <Icon n="upload" s={16} stroke={2} />
             </span>
             <div className="min-w-0 flex-1">
@@ -133,7 +132,7 @@ export default function Review() {
         )}
         {!failed && !up && sess.clips.some((c) => c.retaken) && (
           <div className="flex gap-3 rounded-lg bg-white/[.06] p-4">
-            <Icon n="check" s={18} className="mt-0.5 text-lime" stroke={2.2} />
+            <Icon n="check" s={18} className="mt-0.5 text-money" stroke={2.2} />
             <p className="text-14 leading-snug text-studio-ink-2">
               <span className="font-semibold text-studio-ink">
                 {sess.repairOf
@@ -153,7 +152,7 @@ export default function Review() {
           <li key={c.id} className="p-4">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div className="flex min-w-0 gap-3">
-                <span className="tnum grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-cobalt px-2 text-12 font-semibold text-white">
+                <span className="tnum grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-brand px-2 text-12 font-semibold text-white">
                   {room ? c.prompt.speaker : i + 1}
                 </span>
                 <div
@@ -202,7 +201,7 @@ export default function Review() {
             a.goClip(0)
             a.replace({ name: "studio" })
           }}
-          className="mx-5 mt-3 self-start text-14 font-semibold text-peri"
+          className="mx-5 mt-3 self-start text-14 font-semibold text-brand-tint"
         >
           Retake the whole room take
         </button>
@@ -222,7 +221,7 @@ export default function Review() {
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
-                className="grow-x h-full w-full rounded-full bg-cobalt-hi"
+                className="grow-x h-full w-full rounded-full bg-brand-hi"
                 style={{ animationDuration: "2200ms" }}
               />
             </div>
@@ -263,67 +262,54 @@ export function Complete({ id }: { id: string }) {
   const unit = j.format === "LINES" ? "line" : "turn"
   return (
     <div className="flex flex-1 flex-col bg-studio pb-8 text-studio-ink">
-      <div className="flex flex-col items-center px-6 pt-[62px] text-center">
+      <div className="flex flex-col items-center px-6 pt-12 text-center">
         <div className="relative">
-          <BoloStage state="complete" size={216} />
+          <BoloStage state="complete" size={188} />
           <Confetti
             n={26}
             coins={false}
             delay={300}
-            colors={["#2B3BFF", "#C6F432", "#9AA3FF", "#FFFFFF", "#FF5A1F"]}
+            colors={["#F5640F", "#18A06B", "#FFB07A", "#FFFFFF", "#E39A12"]}
           />
         </div>
-        <span
-          className="eyebrow rise -mt-2 text-lime"
-          style={{ animationDelay: "200ms" }}
-        >
-          Session complete
-        </span>
-        <h1
-          className="semi rise mt-2 text-38 font-bold tracking-[-0.03em]"
-          style={{ animationDelay: "280ms" }}
-        >
+        <span className="eyebrow rise -mt-1 text-money">Session complete</span>
+        <h1 className="semi rise mt-1.5 text-30 font-semibold tracking-[-0.025em]">
           That's every {unit}.
         </h1>
-        <p
-          className="rise mt-2 max-w-[30ch] text-16 leading-snug text-studio-ink-2"
-          style={{ animationDelay: "360ms" }}
-        >
+        <p className="rise mt-1.5 max-w-[30ch] text-14 leading-snug text-studio-ink-2">
           {j.title} is with reviewers now. You'll usually hear back within 24
           hours.
         </p>
       </div>
 
-      <div
-        className="rise mx-5 mt-7 rounded-lg bg-studio-2 p-5 shadow-[inset_0_0_0_1px_var(--color-studio-line)]"
-        style={{ animationDelay: "440ms" }}
-      >
+      {/* Single unified dark studio sheet instead of two stacked boxes */}
+      <div className="grad-studio-card rise mx-5 mt-5 rounded-lg p-5 shadow-[inset_0_0_0_1px_var(--color-studio-line)]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="cond tnum text-48 font-bold tracking-[-0.02em]">
+            <div className="cond tnum text-38 font-semibold tracking-[-0.02em]">
               {inr(sub.total)}
             </div>
-            <div className="mt-1 text-14 text-studio-ink-2">
+            <div className="mt-1 text-12 text-studio-ink-2">
               guaranteed once checks pass
             </div>
           </div>
-          <span className="mt-1 inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-orange/15 px-3 text-12 font-semibold whitespace-nowrap text-orange">
-            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-orange" />{" "}
+          <span className="mt-1 inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-wait/15 px-3 text-12 font-medium whitespace-nowrap text-wait">
+            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-wait" />{" "}
             Pending review
           </span>
         </div>
         {j.bonus > 0 && (
-          <div className="mt-3 flex items-center gap-2 text-14 text-studio-ink-2">
-            <Icon n="gift" s={16} />
+          <div className="mt-2.5 flex items-center gap-2 text-12 text-studio-ink-2">
+            <Icon n="gift" s={15} />
             <span>
-              <span className="tnum font-semibold text-studio-ink">
+              <span className="tnum font-medium text-studio-ink">
                 +{inr(j.bonus)} quality bonus
               </span>{" "}
               if reviewers mark it clean
             </span>
           </div>
         )}
-        <div className="tnum mt-4 grid grid-cols-3 gap-2 border-t border-studio-line pt-4 text-center">
+        <div className="tnum my-4 grid grid-cols-3 gap-2 border-y border-studio-line py-3.5 text-center">
           {[
             [
               String(sub.clips.length),
@@ -336,17 +322,11 @@ export function Complete({ id }: { id: string }) {
             ],
           ].map(([v, l]) => (
             <div key={l}>
-              <div className="cond text-24 leading-none font-bold">{v}</div>
+              <div className="cond text-20 leading-none font-semibold">{v}</div>
               <div className="mt-1 text-11 text-studio-ink-2">{l}</div>
             </div>
           ))}
         </div>
-      </div>
-
-      <div
-        className="rise mx-5 mt-3 rounded-lg bg-studio-2 p-5 shadow-[inset_0_0_0_1px_var(--color-studio-line)]"
-        style={{ animationDelay: "520ms" }}
-      >
         <Timeline
           dark
           steps={[
@@ -387,7 +367,7 @@ export function Complete({ id }: { id: string }) {
           </Btn>
         ) : (
           <Btn full size="lg" v="white" onClick={() => a.setTab("jobs")}>
-            Browse missions
+            Browse scenes
           </Btn>
         )}
         <Btn
@@ -436,7 +416,7 @@ export function Submission({ id }: { id: string }) {
         right={
           <button
             onClick={() => a.openSheet("help")}
-            className="mr-2 h-11 rounded-full px-3 text-14 font-semibold text-cobalt hover:bg-cobalt-soft"
+            className="mr-2 h-11 rounded-full px-3 text-14 font-semibold text-brand hover:bg-brand-soft"
           >
             Help
           </button>
@@ -444,7 +424,7 @@ export function Submission({ id }: { id: string }) {
       />
       <div className="px-5 pt-2">
         {!echoes && <Status k={sub.status} className="mb-3" />}
-        <h1 className="semi text-30 font-bold tracking-[-0.025em]">
+        <h1 className="semi text-24 font-semibold tracking-[-0.02em]">
           {repair ? (
             room ? (
               "The room take needs repeating"
@@ -473,19 +453,19 @@ export function Submission({ id }: { id: string }) {
       </div>
 
       {/* The money, in its real state */}
-      <div className="mx-5 mt-5 grid grid-cols-2 overflow-hidden rounded-lg bg-surface shadow-card">
-        <div className="border-r border-line p-4">
-          <div className="text-12 font-medium text-ink-2">Guaranteed</div>
-          <div className="cond tnum mt-1 text-30 font-bold">
+      <div className="grad-ink mx-5 mt-4 grid grid-cols-2 overflow-hidden rounded-lg text-white shadow-card">
+        <div className="border-r border-white/10 p-4">
+          <div className="text-12 text-white/60">Guaranteed</div>
+          <div className="cond tnum mt-1 text-30 font-semibold">
             {inr(sub.total)}
           </div>
-          <div className="mt-1.5 flex items-center gap-1.5 text-12 font-semibold">
+          <div className="mt-1.5 flex items-center gap-1.5 text-12 font-medium">
             <span
               className={`h-2 w-2 rounded-full ${
-                approved ? "bg-lime" : "bg-orange"
+                approved ? "bg-money" : "bg-wait"
               }`}
             />
-            <span className={approved ? "text-lime-ink" : "text-orange-ink"}>
+            <span className={approved ? "text-money" : "text-wait"}>
               {approved
                 ? "In Available"
                 : repair
@@ -495,11 +475,11 @@ export function Submission({ id }: { id: string }) {
           </div>
         </div>
         <div className="p-4">
-          <div className="text-12 font-medium text-ink-2">Quality bonus</div>
-          <div className="cond tnum mt-1 text-30 font-bold">
+          <div className="text-12 text-white/60">Quality bonus</div>
+          <div className="cond tnum mt-1 text-30 font-semibold">
             {j.bonus ? `+${inr(j.bonus)}` : "—"}
           </div>
-          <div className="mt-1.5 text-12 text-ink-2">
+          <div className="mt-1.5 text-12 text-white/65">
             {j.bonus
               ? approved
                 ? "Added separately"
@@ -507,7 +487,7 @@ export function Submission({ id }: { id: string }) {
               : "Not offered here"}
           </div>
         </div>
-        <div className="col-span-2 border-t border-line bg-surface-2 px-4 py-3 text-14 text-ink-2">
+        <div className="col-span-2 border-t border-white/10 bg-white/5 px-4 py-2.5 text-12 text-white/75">
           {approved
             ? "Ready to withdraw now."
             : repair
@@ -529,9 +509,9 @@ export function Submission({ id }: { id: string }) {
 
       {repair && (
         <div className="mx-5 mt-5 overflow-hidden rounded-lg bg-surface shadow-card">
-          <div className="h-1 bg-orange" />
+          <div className="h-1 bg-wait" />
           <div className="p-5">
-            <Label className="text-orange-ink">
+            <Label className="text-wait-ink">
               Why · {repair.code.replace(/_/g, " ").toLowerCase()}
             </Label>
             <div className="semi mt-2 text-24 leading-tight font-bold">
@@ -567,7 +547,7 @@ export function Submission({ id }: { id: string }) {
                     acc === 1 ? unit : unit + "s"
                   } stay accepted. The full ${inr(sub.total)} is paid once the fix is approved.`
                 : repair.mode === "full_take"
-                  ? `Room missions are one continuous conversation, so the whole take is recorded again with the same people. Everyone consents again. The full ${inr(sub.total)} is paid once the new take is approved.`
+                  ? `Room scenes are one continuous conversation, so the whole take is recorded again with the same people. Everyone consents again. The full ${inr(sub.total)} is paid once the new take is approved.`
                   : "A participant needs to renew their consent before this take can be reviewed."}
             </div>
             <div className="mt-5 flex flex-col gap-2">
@@ -625,8 +605,8 @@ export function Submission({ id }: { id: string }) {
       )}
 
       {(sub.status === "under_review" || sub.status === "appeal") && (
-        <Card className="mx-5 mt-5">
-          <Label className="mb-4">What's happening</Label>
+        <div className="mx-5 mt-6">
+          <Label className="mb-3">What's happening</Label>
           <Timeline
             steps={[
               {
@@ -649,18 +629,18 @@ export function Submission({ id }: { id: string }) {
               },
             ]}
           />
-          <p className="mt-5 text-12 leading-snug text-ink-3">
+          <p className="mt-3 text-12 leading-snug text-ink-3">
             Reviewers check language match, clarity, background voices and
             duplicates. You don't need to do anything.
           </p>
-        </Card>
+        </div>
       )}
 
       <div className="mt-6 px-5">
-        <Label className="mb-2.5">{room ? "Take" : "Your takes"}</Label>
-        <ul className="divide-y divide-line rounded-lg bg-surface px-4 shadow-card">
+        <Label className="mb-2">{room ? "Take" : "Your takes"}</Label>
+        <ul className="divide-y divide-line border-y border-line">
           {sub.clips.map((c, i) => (
-            <li key={c.id} className="flex items-center gap-3 py-3.5">
+            <li key={c.id} className="flex items-center gap-3 py-3">
               <div className="w-12 shrink-0">
                 <Waveform
                   seed={c.seed}
@@ -670,7 +650,7 @@ export function Submission({ id }: { id: string }) {
                     c.state === "accepted"
                       ? "ink"
                       : c.state === "repair_required"
-                        ? "orange"
+                        ? "wait"
                         : "muted"
                   }
                 />
@@ -709,12 +689,12 @@ export function Credited({
   const rate = j ? Math.round((total / j.minutes) * 60) : 0
   const parts = j?.format === "LINES" ? "lines" : "turns"
   return (
-    <div className="flex flex-1 flex-col px-5 pt-[62px] pb-8">
+    <div className="flex flex-1 flex-col justify-between px-5 pt-14 pb-8">
       <MoneyMoment
         id={`credit-${title}-${amount}-${bonus}`}
         amount={total}
         tone="earned"
-        eyebrow={partial ? "Part of this mission is paid" : "Approved"}
+        eyebrow={partial ? "Part of this scene is paid" : "Approved"}
         line={
           partial
             ? `The accepted ${parts} of ${title} are in Available. ${inr(pending)} more is held for your retake.`
@@ -729,89 +709,104 @@ export function Credited({
         }
         cta="See details"
       />
-      <div className="rise relative overflow-hidden rounded-lg bg-lime p-6 text-ink">
-        <Tag tone="ink" icon="check">
-          {partial ? "Partly approved" : "Approved"}
-        </Tag>
-        <div className="cond mt-5 text-88 font-bold tracking-[-0.02em]">
-          <Money value={total} sign />
-        </div>
-        <p className="mt-2 text-16 font-medium text-ink/70">
-          {title} · now in Available
-        </p>
-        <dl className="tnum mt-5 space-y-2 border-t border-ink/15 pt-4 text-14">
-          <div className="flex justify-between">
-            <dt className="text-ink/70">Guaranteed pay</dt>
-            <dd className="font-semibold">{inr(amount)}</dd>
+
+      {/* Unified scalloped receipt ticket (inspired by the Payment Receipt reference) */}
+      <div className="overflow-hidden rounded-lg bg-surface shadow-card">
+        <div className="grad-money-soft relative px-6 pt-6 pb-5 text-ink">
+          <div className="flex items-center justify-between">
+            <Tag tone="ink" icon="check">
+              {partial ? "Partly approved" : "Approved"}
+            </Tag>
           </div>
-          {bonus > 0 && (
-            <div className="flex justify-between">
-              <dt className="flex items-center gap-1.5 text-ink/70">
-                <Icon n="gift" s={15} /> Quality bonus
-              </dt>
-              <dd className="font-semibold">+{inr(bonus)}</dd>
+          <p className="mt-3 text-16 font-medium text-ink-2">
+            We credited your payment of{" "}
+            <span className="cond tnum text-24 font-semibold text-ink">
+              <Money value={total} sign />
+            </span>
+          </p>
+          <p className="mt-1 text-12 text-ink-2">
+            {title} · now in your Available balance
+          </p>
+        </div>
+
+        {/* Scalloped ticket perforation edge */}
+        <svg
+          viewBox="0 0 360 12"
+          preserveAspectRatio="none"
+          className="-mt-1.5 block h-3 w-full text-surface"
+          aria-hidden
+        >
+          <path
+            fill="currentColor"
+            d="M0 12 V6 Q9 0 18 6 T36 6 T54 6 T72 6 T90 6 T108 6 T126 6 T144 6 T162 6 T180 6 T198 6 T216 6 T234 6 T252 6 T270 6 T288 6 T306 6 T324 6 T342 6 T360 6 V12 Z"
+          />
+        </svg>
+
+        <div className="space-y-4 px-5 pt-3 pb-5">
+          <div>
+            <div className="mb-2 text-12 font-medium text-ink-3">Summary</div>
+            <div className="tnum space-y-1.5 text-14">
+              <div className="flex items-center justify-between rounded-md bg-surface-2 px-3.5 py-2.5">
+                <span className="text-ink-2">Guaranteed pay</span>
+                <span className="font-medium">{inr(amount)}</span>
+              </div>
+              {bonus > 0 && (
+                <div className="flex items-center justify-between rounded-md bg-surface-2 px-3.5 py-2.5">
+                  <span className="flex items-center gap-1.5 text-ink-2">
+                    <Icon n="gift" s={14} /> Quality bonus
+                  </span>
+                  <span className="font-medium text-money-ink">
+                    +{inr(bonus)}
+                  </span>
+                </div>
+              )}
+              {j && (
+                <div className="flex items-center justify-between rounded-md bg-surface-2 px-3.5 py-2.5">
+                  <span className="text-ink-2">
+                    Speaking time (~{j.minutes} min)
+                  </span>
+                  <span className="font-medium">≈{inr(rate)}/hr</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {partial && (
+            <div className="flex items-center gap-3 rounded-md bg-wait-soft/70 px-3.5 py-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-wait text-white">
+                <Icon n="retry" s={15} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-14 font-medium text-ink">
+                  <span className="tnum">{inr(pending)}</span> held for 1 retake
+                </div>
+                <p className="text-12 text-ink-2">
+                  Fix within 7 days to release the rest.
+                </p>
+              </div>
+              <Btn size="sm" v="ink" onClick={() => a.setTab("home")}>
+                Fix
+              </Btn>
             </div>
           )}
-          {j && (
-            <div className="flex justify-between">
-              <dt className="text-ink/70">For ~{j.minutes} min of speaking</dt>
-              <dd className="font-semibold">≈{inr(rate)}/hr</dd>
-            </div>
-          )}
-        </dl>
+
+          <div className="flex items-center justify-between rounded-md bg-surface-2 px-3.5 py-2.5 text-12">
+            <span className="text-ink-2">
+              Available balance:{" "}
+              <span className="tnum font-medium text-ink">
+                {inr(s.available)}
+              </span>
+            </span>
+            <span className="tnum font-medium text-ink-2">
+              {reached
+                ? "Ready to withdraw"
+                : `${inr(MIN_WITHDRAW - s.available)} to ₹${MIN_WITHDRAW}`}
+            </span>
+          </div>
+        </div>
       </div>
 
-      {partial && (
-        <div
-          className="rise mt-3 flex items-center gap-4 rounded-lg bg-surface p-5 shadow-card"
-          style={{ animationDelay: "80ms" }}
-        >
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange-soft text-orange-ink">
-            <Icon n="retry" s={18} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-16 font-semibold">
-              <span className="tnum">{inr(pending)}</span> waiting on one fix
-            </div>
-            <p className="mt-0.5 text-12 leading-snug text-ink-2">
-              One turn needs a retake. Fix it within 7 days to release the rest.
-            </p>
-          </div>
-          <Btn size="sm" v="ink" onClick={() => a.setTab("home")}>
-            Fix
-          </Btn>
-        </div>
-      )}
-
-      <Card className="rise mt-3" style={{ animationDelay: "140ms" }}>
-        <div className="flex items-baseline justify-between">
-          <span className="text-14 font-semibold">
-            <span className="tnum">{inr(s.available)}</span> available
-          </span>
-          <span className="tnum text-12 font-medium text-ink-2">
-            {reached
-              ? "Ready to withdraw"
-              : `${inr(MIN_WITHDRAW - s.available)} to go`}
-          </span>
-        </div>
-        <Meter
-          className="mt-3"
-          value={Math.min(s.available, MIN_WITHDRAW)}
-          max={MIN_WITHDRAW}
-          tone="lime"
-          h="h-2.5"
-        />
-        <p className="mt-3 text-12 text-ink-2">
-          {reached
-            ? "You can send this to your UPI now. No fees."
-            : "Withdrawals open at ₹100. One more mission gets you there."}
-        </p>
-      </Card>
-
-      <div
-        className="rise mt-auto flex flex-col gap-2 pt-10"
-        style={{ animationDelay: "220ms" }}
-      >
+      <div className="flex flex-col gap-2 pt-6">
         {reached ? (
           <Btn
             full
@@ -828,7 +823,7 @@ export function Credited({
           </Btn>
         )}
         <Btn full v="ghost" onClick={() => a.setTab("home")}>
-          Find the next mission
+          Find the next scene
         </Btn>
       </div>
     </div>

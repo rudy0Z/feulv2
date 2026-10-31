@@ -6,14 +6,14 @@ import {
   jobTotal,
   lengthOf,
   perHour,
+  type Lang,
   type Length,
   type State,
 } from "../state/model"
 import { MIN_WITHDRAW, sel, useStore } from "../state/store"
-import Bolo, { Bubble, Typed, type Mood } from "../ui/Bolo"
+import Bolo, { Typed, type Mood } from "../ui/Bolo"
 import {
   Btn,
-  Card,
   FORMAT_ICON,
   Icon,
   LengthTag,
@@ -21,13 +21,12 @@ import {
   Notice,
   RareTag,
   Section,
+  SettingTile,
   Status,
-  Tag,
-  Waveform,
   inr,
 } from "../ui/kit"
 
-/** Missions already done: anything submitted, plus earnings recorded under a mission's title. */
+/** Scenes already done: anything submitted, plus earnings recorded under a scene's title. */
 function finished(s: State) {
   const earned = new Set(
     s.ledger.filter((l) => l.kind === "earning").map((l) => l.title),
@@ -38,7 +37,7 @@ function finished(s: State) {
   ])
 }
 
-/** Minutes of the shortest mission open to this contributor, if any. */
+/** Minutes of the shortest scene open to this contributor, if any. */
 const shortest = (s: State) => {
   const m = Math.min(...sel.openForMe(s).map((j) => j.minutes))
   return Number.isFinite(m) ? m : null
@@ -55,7 +54,7 @@ export default function Home() {
   const done = finished(s)
   const fresh = open.filter((j) => !done.has(j.id) && j.id !== s.session?.jobId)
   const byTime = [...fresh].sort((x, y) => x.minutes - y.minutes)
-  // First mission: the shortest one. After that: the rarest voice that still fits one sitting.
+  // First scene: the shortest one. After that: the rarest voice that still fits one sitting.
   const next = isNew
     ? byTime[0]
     : ([...fresh]
@@ -71,12 +70,14 @@ export default function Home() {
 
   return (
     <div className="pb-6">
-      <BoloGreeting greet={greet} />
+      <BoloStageHeader greet={greet} />
+      {/* New contributors see setup first: it's short, and UPI + name gate the first payout. */}
+      {isNew && <Checklist />}
 
       {(s.session ||
         attention.length > 0 ||
         (s.withdrawal && s.withdrawal.status !== "paid")) && (
-        <div className="mt-5 flex flex-col gap-2.5 px-5">
+        <div className="mt-4 flex flex-col gap-2.5 px-5">
           <SessionCard />
           {attention.map((x) => {
             const j = sel.job(s, x.jobId)
@@ -116,7 +117,7 @@ export default function Home() {
               onClick={() => a.push({ name: "withdrawal" })}
               className="flex items-center gap-3 rounded-lg bg-surface p-4 text-left shadow-card transition-transform duration-300 ease-(--ease-spring) active:scale-[0.98]"
             >
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-orange-soft text-orange-ink">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-wait-soft text-wait-ink">
                 <Icon n="bank" s={18} />
               </span>
               <span className="min-w-0 flex-1">
@@ -134,30 +135,28 @@ export default function Home() {
         </div>
       )}
 
-      {isNew ? <FirstHundred /> : <MoneyCard />}
-
       {empty ? (
         <NoWork />
       ) : (
         <>
           {next ? (
-            <section className="mt-9 px-5">
-              <div className="mb-3.5 flex items-end justify-between">
-                <h2 className="semi text-20 font-bold">
-                  {isNew ? "Your first mission" : "Picked for your voice"}
+            <section className="mt-6 px-5">
+              <div className="mb-3 flex items-end justify-between">
+                <h2 className="semi text-18 font-semibold">
+                  {isNew ? "Your first scene" : "Picked for your voice"}
                 </h2>
                 <button
                   onClick={() => a.openLen("all")}
-                  className="text-14 font-semibold text-cobalt"
+                  className="text-14 font-medium text-brand"
                 >
                   All {open.length}
                 </button>
               </div>
-              <HeroMission id={next.id} />
+              <HeroScene id={next.id} />
             </section>
           ) : (
-            <p className="mt-9 px-5 text-16 text-ink-2">
-              You've started everything open for you today. New missions show up
+            <p className="mt-6 px-5 text-16 text-ink-2">
+              You've started everything open for you today. New scenes show up
               here.
             </p>
           )}
@@ -170,23 +169,23 @@ export default function Home() {
         <Section
           title="With reviewers"
           sub="Pending money is shown separately until it's approved."
-          className="mt-10"
+          className="mt-8"
         >
-          <Card className="divide-y divide-line px-4 py-1">
+          <div className="divide-y divide-line border-y border-line">
             {reviewing.map((x) => {
               const j = sel.job(s, x.jobId)
               return (
                 <button
                   key={x.id}
                   onClick={() => a.push({ name: "submission", id: x.id })}
-                  className="flex w-full items-center gap-3.5 py-3.5 text-left"
+                  className="flex w-full items-center gap-3.5 py-3 text-left"
                 >
-                  <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-orange-soft">
-                    <span className="ping-soft absolute inset-2 rounded-full bg-orange/40" />
-                    <span className="relative h-2 w-2 rounded-full bg-orange" />
+                  <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-wait-soft">
+                    <span className="ping-soft absolute inset-2 rounded-full bg-wait/40" />
+                    <span className="relative h-2 w-2 rounded-full bg-wait" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-16 font-semibold">
+                    <span className="block truncate text-16 font-medium">
                       {j.title}
                     </span>
                     <span className="block truncate text-12 text-ink-2">
@@ -194,43 +193,42 @@ export default function Home() {
                     </span>
                   </span>
                   <span className="text-right">
-                    <span className="cond tnum block text-20 leading-none font-bold">
+                    <span className="cond tnum block text-18 leading-none font-semibold">
                       {inr(x.total)}
                     </span>
-                    <span className="text-11 font-semibold text-orange-ink">
+                    <span className="text-11 font-medium text-wait-ink">
                       pending
                     </span>
                   </span>
                 </button>
               )
             })}
-          </Card>
+          </div>
         </Section>
       )}
-
-      {isNew && <Checklist />}
     </div>
   )
 }
 
-/* Bolo's line is always about the user's actual situation — never filler. */
-function BoloGreeting({ greet }: { greet: string }) {
-  const { s } = useStore()
+/* Companion header: Bolo and its line share one card with the wallet/milestone strip.
+   This is Home's only Bolo. */
+function BoloStageHeader({ greet }: { greet: string }) {
+  const { s, a } = useStore()
   const open = sel.openForMe(s)
   const isNew = s.ledger.length === 0 && s.submissions.length === 0
   const attention = sel.attention(s)
   const review = s.submissions.find((x) => x.status === "under_review")
   const sess = s.session
-  let mood: Mood = "idle"
-  let line = `${open.length} missions are open in ${LANGS[s.lang].name}. The quick ones fit in a chai break.`
+  let mood: Mood = "happy"
+  let line = `${open.length} scenes are open in ${LANGS[s.lang].name}. The quick ones fit in a chai break.`
   if (sel.eligible(s).length === 0) {
     mood = "sleep"
-    line = `No ${LANGS[s.lang].name} missions right now. I'll wake you the moment labs need your voice.`
+    line = `No ${LANGS[s.lang].name} scenes right now. I'll wake you the moment labs need your voice.`
   } else if (isNew) {
-    mood = "idle"
+    mood = "happy"
     const m = shortest(s)
     line = `I'm Bolo, I run the studio. ${
-      m ? `Your first mission takes about ${m} minutes. ` : ""
+      m ? `Your first scene takes about ${m} minutes. ` : ""
     }I direct, you talk.`
   } else if (attention.length) {
     mood = "coach"
@@ -242,7 +240,7 @@ function BoloGreeting({ greet }: { greet: string }) {
     mood = "concern"
     line = `Your takes didn't upload, but they're safe on this phone. One tap to retry.`
   } else if (review) {
-    mood = "think"
+    mood = "idle"
     line = `${sel.job(s, review.jobId).title} is with reviewers. Usually back within 24 hours. I'll ping you.`
   }
   const [hello, setHello] = useState(true)
@@ -250,24 +248,90 @@ function BoloGreeting({ greet }: { greet: string }) {
     const t = setTimeout(() => setHello(false), 1700)
     return () => clearTimeout(t)
   }, [])
+
+  const inReview = sel.inReview(s) + sel.held(s)
+  const gap = Math.max(0, MIN_WITHDRAW - s.available)
+  const sorted = open.slice().sort((x, y) => x.minutes - y.minutes)
+  let acc = 0
+  const path = sorted.filter((j) =>
+    acc < MIN_WITHDRAW ? ((acc += jobTotal(j)), true) : false,
+  )
+  const mins = path.reduce((t, j) => t + j.minutes, 0)
+
   return (
     <div className="px-5 pt-1">
-      <h1 className="semi rise text-30 font-bold tracking-[-0.025em]">
-        {greet}, {s.name}
-      </h1>
-      <div className="mt-3 flex items-start gap-2">
-        <div className="-ml-2 shrink-0">
-          <Bolo
-            mood={hello && mood !== "sleep" ? "hello" : mood}
-            size={78}
-            label="Bolo"
-          />
-        </div>
-        <Bubble tail="left" className="mt-2 flex-1">
-          <p className="text-14 leading-snug">
+      <div className="pb-3">
+        <p className="text-12 font-medium text-ink-2">{greet}</p>
+        <h1 className="semi text-24 font-semibold">{s.name}</h1>
+      </div>
+
+      {/* Bolo sits inside the card, beside the line it is saying: one speaker, one box. */}
+      <div className="grad-ink relative overflow-hidden rounded-lg p-4 text-white shadow-card">
+        <div className="flex items-start gap-3">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-white/[.06]">
+            <Bolo
+              mood={hello && mood !== "sleep" ? "hello" : mood}
+              size={50}
+              ground="none"
+              label="Bolo"
+            />
+          </span>
+          <p className="min-w-0 flex-1 pt-0.5 text-14 leading-snug text-white/90">
             <Typed text={line} step={32} />
           </p>
-        </Bubble>
+        </div>
+
+        {isNew ? (
+          <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-money text-ink">
+                <Icon n="bank" s={13} />
+              </span>
+              <span className="tnum text-12 leading-snug text-white/75">
+                First{" "}
+                <span className="font-semibold text-money">
+                  ₹{MIN_WITHDRAW}
+                </span>{" "}
+                unlocks UPI cashout ·{" "}
+                <span className="text-white">
+                  {path.length} scenes (~{mins} min)
+                </span>
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+            <button
+              onClick={() => a.setTab("wallet")}
+              className="flex min-w-0 items-baseline gap-2.5 text-left"
+            >
+              <span className="cond tnum text-24 leading-none font-semibold text-money">
+                <Money value={s.available} />
+              </span>
+              <span className="truncate text-12 text-white/65">
+                available
+                {inReview > 0 ? ` · ${inr(inReview)} in review` : ""}
+              </span>
+            </button>
+            {gap > 0 ? (
+              <button
+                onClick={() => a.setTab("wallet")}
+                className="tnum shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-12 font-medium text-white/85 hover:bg-white/15"
+              >
+                {inr(gap)} to ₹{MIN_WITHDRAW} →
+              </button>
+            ) : (
+              <Btn
+                v="white"
+                size="sm"
+                onClick={() => a.push({ name: "withdraw" })}
+                icon="bank"
+              >
+                Withdraw {inr(s.available)}
+              </Btn>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -332,10 +396,10 @@ function SessionCard() {
       </Notice>
     )
   return (
-    <div className="relative overflow-hidden rounded-lg bg-cobalt p-5 text-white shadow-cobalt">
+    <div className="grad-voice relative overflow-hidden rounded-lg p-5 text-white shadow-brand">
       <div className="relative">
         <span className="eyebrow text-white/70">Continue recording</span>
-        <div className="semi mt-1.5 text-24 leading-tight font-bold">
+        <div className="semi mt-1.5 text-20 leading-tight font-semibold">
           {j.title}
         </div>
         <div className="tnum mt-1 text-14 text-white/75">
@@ -371,207 +435,52 @@ function SessionCard() {
   )
 }
 
-/* Ink plate: lime is money that's yours, orange is money waiting on reviewers. They never merge. */
-function MoneyCard() {
-  const { s, a } = useStore()
-  const inReview = sel.inReview(s) + sel.held(s)
-  const gap = Math.max(0, MIN_WITHDRAW - s.available)
-  const scale = Math.max(MIN_WITHDRAW, s.available + inReview)
-  const rate = sel.rate(s)
-  return (
-    <div className="rise relative mx-5 mt-5 overflow-hidden rounded-lg bg-ink p-5 text-white shadow-float">
-      <div className="flex items-center justify-between">
-        <span className="eyebrow text-white/55">Yours to withdraw</span>
-        {rate > 0 && (
-          <Tag tone="studio" icon="trend">
-            <span className="tnum">≈{inr(rate)}/hr</span>
-          </Tag>
-        )}
-      </div>
-      <div className="cond mt-2 text-88 font-bold tracking-[-0.02em] text-lime">
-        <Money value={s.available} />
-      </div>
-      <p className="tnum mt-1 text-14 text-white/60">
-        +{inr(sel.thisWeek(s))} approved this week from {sel.minsWeek(s)} min of
-        speaking
-      </p>
-
-      <div
-        className="mt-5 flex h-2.5 gap-[3px] overflow-hidden rounded-full bg-white/10"
-        role="img"
-        aria-label={`${inr(s.available)} available, ${inr(inReview)} in review`}
-      >
-        <span
-          className="grow-x h-full rounded-full bg-lime"
-          style={{ width: `${(s.available / scale) * 100}%` }}
-        />
-        {inReview > 0 && (
-          <span
-            className="grow-x pulse-dot h-full rounded-full bg-orange"
-            style={{
-              width: `${(inReview / scale) * 100}%`,
-              animationDelay: "200ms",
-            }}
-          />
-        )}
-      </div>
-      <div className="tnum mt-2.5 flex items-center justify-between text-12 text-white/60">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-lime" /> Available
-          {inReview > 0 && (
-            <>
-              <span className="ml-2 h-2 w-2 rounded-full bg-orange" />{" "}
-              {inr(inReview)} with reviewers
-            </>
-          )}
-        </span>
-        <span>{gap > 0 ? `${inr(gap)} to ₹${MIN_WITHDRAW}` : "No fees"}</span>
-      </div>
-
-      <div className="my-4 opacity-25">
-        <Waveform seed={9} bars={64} h={10} tone="light" />
-      </div>
-      <div className="flex items-center gap-2">
-        {gap > 0 ? (
-          <Btn
-            v="glass"
-            size="sm"
-            onClick={() => a.setTab("wallet")}
-            iconRight="arrow"
-          >
-            Open wallet
-          </Btn>
-        ) : (
-          <Btn
-            v="money"
-            size="sm"
-            onClick={() => a.push({ name: "withdraw" })}
-            icon="bank"
-          >
-            Withdraw {inr(s.available)}
-          </Btn>
-        )}
-        <span className="text-12 text-white/50">
-          {gap > 0
-            ? gap <= 30
-              ? "One Quick mission and you can withdraw."
-              : "A few missions and you can withdraw."
-            : "Reaches your UPI in 1 working day."}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function FirstHundred() {
-  const { s } = useStore()
-  const open = sel
-    .openForMe(s)
-    .slice()
-    .sort((x, y) => x.minutes - y.minutes)
-  let acc = 0
-  const path = open.filter((j) =>
-    acc < MIN_WITHDRAW ? ((acc += jobTotal(j)), true) : false,
-  )
-  const mins = path.reduce((t, j) => t + j.minutes, 0)
-  return (
-    <div className="rise relative mx-5 mt-5 overflow-hidden rounded-lg bg-ink p-5 text-white shadow-float">
-      <span className="eyebrow text-white/55">Your first withdrawal</span>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="cond text-88 font-bold text-lime">₹0</span>
-        <span className="cond tnum text-30 font-bold text-white/35">
-          / ₹{MIN_WITHDRAW}
-        </span>
-      </div>
-      <div className="mt-5 flex items-center gap-1">
-        {path.map((j, i) => (
-          <div
-            key={j.id}
-            className="relative h-2.5 min-w-0 overflow-hidden rounded-full bg-white/15"
-            style={{ flex: jobTotal(j) }}
-          >
-            <span
-              className="sheen absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent"
-              style={{ animationDelay: `${600 + i * 180}ms` }}
-            />
-          </div>
-        ))}
-        <span className="ml-1 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-lime text-ink">
-          <Icon n="bank" s={14} />
-        </span>
-      </div>
-      <p className="tnum mt-4 text-14 leading-snug text-white/70">
-        <span className="font-semibold text-white">
-          {path.length} missions, about {mins} minutes of talking,
-        </span>{" "}
-        get you to ₹{MIN_WITHDRAW}. Money becomes yours once reviewers approve
-        each one.
-      </p>
-    </div>
-  )
-}
-
-function HeroMission({ id }: { id: string }) {
+function HeroScene({ id }: { id: string }) {
   const { s, a } = useStore()
   const j = sel.job(s, id)
   return (
-    <div
-      className="rise overflow-hidden rounded-lg bg-surface shadow-card"
-      style={{ animationDelay: "120ms" }}
-    >
+    <div className="overflow-hidden rounded-lg bg-surface shadow-card">
       <button
         onClick={() => a.push({ name: "detail", jobId: j.id })}
         className="group block w-full text-left"
       >
-        <div className="relative h-[176px] overflow-hidden bg-surface-3">
-          <img
-            src={j.image}
-            alt=""
-            className="h-full w-full object-cover transition-transform duration-[1200ms] ease-(--ease-out) group-hover:scale-105"
-            onError={(e) => (e.currentTarget.style.visibility = "hidden")}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/55 via-transparent to-transparent" />
-          <div className="absolute top-3.5 left-3.5 flex gap-1.5">
-            <LengthTag l={lengthOf(j)} dark />
+        <div className="flex items-center gap-3 px-5 pt-4">
+          <SettingTile env={j.env} size={44} />
+          <div className="flex min-w-0 flex-wrap gap-1.5">
+            <LengthTag l={lengthOf(j)} />
             <RareTag x={j.coverage} />
           </div>
-          <div className="absolute right-4 bottom-3.5 left-4 flex items-center gap-1.5 text-12 font-semibold text-white">
-            <Icon n={FORMAT_ICON[j.format]} s={14} />
-            {FORMAT_LABEL[j.format]} ·{" "}
-            <span className="tnum">~{j.minutes} min</span> · {j.turns}{" "}
-            {j.format === "LINES" ? "lines" : "turns"} · {LANGS[j.lang].native}
-          </div>
         </div>
-        <div className="px-5 pt-4">
-          <div className="semi text-24 leading-tight font-bold tracking-[-0.015em]">
-            {j.title}
+        <div className="flex items-start justify-between gap-4 px-5 pt-3">
+          <div className="min-w-0">
+            <div className="semi text-18 leading-tight font-semibold">
+              {j.title}
+            </div>
+            <p className="mt-1 line-clamp-2 text-14 leading-snug text-ink-2">
+              {j.situation}
+            </p>
+            <p className="tnum mt-2 flex flex-wrap items-center gap-x-1.5 text-12 text-ink-2">
+              <Icon n={FORMAT_ICON[j.format]} s={14} />
+              {FORMAT_LABEL[j.format]} · ~{j.minutes} min ·{" "}
+              <span lang={j.lang}>{LANGS[j.lang].native}</span>
+            </p>
           </div>
-          <p className="mt-1 line-clamp-2 text-14 leading-snug text-ink-2">
-            {j.situation}
-          </p>
+          <div className="shrink-0 text-right">
+            <div className="cond tnum text-24 leading-none font-semibold text-ink">
+              {inr(jobTotal(j))}
+            </div>
+            <div className="tnum mt-1 text-11 font-medium text-ink-2">
+              +{inr(j.bonus)} bonus
+            </div>
+          </div>
         </div>
       </button>
-      <div className="mx-5 mt-4 grid grid-cols-3 divide-x divide-line rounded-md bg-surface-2">
-        {[
-          [inr(jobTotal(j)), "guaranteed"],
-          [`+${inr(j.bonus)}`, "quality bonus"],
-          [`≈${inr(perHour(j))}`, "per hour"],
-        ].map(([v, l]) => (
-          <div key={l} className="px-3 py-2.5">
-            <div className="cond tnum text-24 leading-none font-bold">{v}</div>
-            <div className="mt-1 text-11 font-medium text-ink-2">{l}</div>
-          </div>
-        ))}
-      </div>
-      <div className="p-5 pt-4">
-        <Btn
-          full
-          size="lg"
-          v="voice"
-          icon="mic"
-          onClick={() => a.startJob(j.id)}
-        >
-          {s.ledger.length === 0 ? "Start my first mission" : "Start mission"}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line px-5 pt-3.5 pb-4">
+        <span className="tnum text-12 text-ink-2">
+          Guaranteed pay · ≈{inr(perHour(j))}/hr
+        </span>
+        <Btn size="md" v="voice" icon="mic" onClick={() => a.startJob(j.id)}>
+          {s.ledger.length === 0 ? "Start my first scene" : "Start scene"}
         </Btn>
       </div>
     </div>
@@ -581,54 +490,44 @@ function HeroMission({ id }: { id: string }) {
 function QuickRail({ ids }: { ids: string[] }) {
   const { s, a } = useStore()
   return (
-    <section className="mt-9">
-      <div className="mb-3.5 flex items-end justify-between px-5">
+    <section className="mt-8 px-5">
+      <div className="mb-2 flex items-end justify-between">
         <div>
-          <h2 className="semi text-20 font-bold">Fits in a chai break</h2>
+          <h2 className="semi text-18 font-semibold">Fits in a chai break</h2>
           <p className="mt-0.5 text-14 text-ink-2">
-            Quick missions, {LENGTHS.quick.range.toLowerCase()}
+            Quick scenes, {LENGTHS.quick.range.toLowerCase()}
           </p>
         </div>
         <button
           onClick={() => a.openLen("quick")}
-          className="text-14 font-semibold text-cobalt"
+          className="text-14 font-medium text-brand"
         >
           See all
         </button>
       </div>
-      <div className="no-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-2">
-        {ids.map((id, i) => {
+      <div className="divide-y divide-line border-y border-line">
+        {ids.map((id) => {
           const j = sel.job(s, id)
           return (
             <button
               key={id}
               onClick={() => a.push({ name: "detail", jobId: id })}
-              className="rise group w-[172px] shrink-0 snap-start overflow-hidden rounded-lg bg-surface text-left shadow-card transition-transform duration-300 ease-(--ease-spring) active:scale-[0.97]"
-              style={{ animationDelay: `${160 + i * 60}ms` }}
+              className="flex w-full items-center gap-3.5 py-3 text-left transition-colors hover:bg-surface/60"
             >
-              <div className="relative h-[92px] overflow-hidden bg-surface-3">
-                <img
-                  src={j.image}
-                  alt=""
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  onError={(e) => (e.currentTarget.style.visibility = "hidden")}
-                />
-                <span className="absolute top-2 left-2">
-                  <Tag tone="white" icon={FORMAT_ICON[j.format]}>
-                    {LANGS[j.lang].native}
-                  </Tag>
-                </span>
+              <SettingTile env={j.env} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-16 font-medium">{j.title}</div>
+                <div className="tnum mt-0.5 text-12 text-ink-2">
+                  {FORMAT_LABEL[j.format]} · ~{j.minutes} min ·{" "}
+                  {LANGS[j.lang].native}
+                </div>
               </div>
-              <div className="p-3">
-                <div className="truncate text-14 font-semibold">{j.title}</div>
-                <div className="mt-1.5 flex items-baseline justify-between">
-                  <span className="cond tnum text-24 leading-none font-bold">
-                    {inr(jobTotal(j))}
-                  </span>
-                  <span className="tnum text-12 text-ink-2">
-                    {j.minutes} min
-                  </span>
+              <div className="text-right">
+                <div className="cond tnum text-18 leading-none font-semibold">
+                  {inr(jobTotal(j))}
+                </div>
+                <div className="tnum mt-0.5 text-11 text-ink-2">
+                  +{inr(j.bonus)} bonus
                 </div>
               </div>
             </button>
@@ -653,44 +552,53 @@ function LengthTiles() {
     <Section
       title="Choose by time"
       sub="Pay is set by minutes of real effort, then lifted for rare voices."
-      className="mt-9"
+      className="mt-8"
     >
-      <div className="grid grid-cols-3 gap-2">
+      <div className="divide-y divide-line border-y border-line">
         {keys.map((k, i) => {
           const n = mine.filter((j) => lengthOf(j) === k).length
           const locked = later.filter((j) => lengthOf(j) === k)
           return (
             <button
               key={k}
-              onClick={() => a.openLen(k)}
-              className="rise flex h-[148px] flex-col justify-between rounded-lg bg-surface p-3.5 text-left shadow-card transition-transform duration-300 ease-(--ease-spring) active:scale-[0.96]"
-              style={{ animationDelay: `${i * 60}ms` }}
+              onClick={() =>
+                n === 0 && locked.length
+                  ? a.push({ name: "profile" })
+                  : a.openLen(k)
+              }
+              className="flex w-full items-center gap-3.5 py-3 text-left transition-colors hover:bg-surface/60"
             >
               <span
                 className={`grid h-9 w-9 place-items-center rounded-full ${
-                  i === 0 ? "bg-ink text-white" : "bg-surface-3 text-ink"
+                  i === 0 ? "bg-brand-soft text-brand" : "bg-surface-3 text-ink"
                 }`}
               >
                 <Icon n={LENGTHS[k].icon} s={17} />
               </span>
-              <span>
-                <span className="block text-16 font-semibold">
+              <span className="min-w-0 flex-1">
+                <span className="block text-16 font-medium">
                   {LENGTHS[k].label}
                 </span>
                 <span className="tnum block text-12 text-ink-2">
-                  {LENGTHS[k].range}
-                </span>
-                <span className="tnum block text-12 text-ink-2">
-                  {LENGTHS[k].pay}
-                </span>
-                <span className="tnum mt-1 block text-12 font-semibold">
-                  {n > 0
-                    ? `${n} open`
-                    : locked.length
-                      ? `Level ${Math.min(...locked.map((j) => j.tier))} unlocks`
-                      : "None open now"}
+                  {LENGTHS[k].range} · {LENGTHS[k].pay}
                 </span>
               </span>
+              <span
+                className={`tnum shrink-0 text-12 font-medium ${
+                  n > 0
+                    ? "text-ink-2"
+                    : locked.length
+                      ? "text-brand-deep"
+                      : "text-ink-3"
+                }`}
+              >
+                {n > 0
+                  ? `${n} open`
+                  : locked.length
+                    ? `Level ${Math.min(...locked.map((j) => j.tier))}`
+                    : "None now"}
+              </span>
+              <Icon n="chev" s={16} className="shrink-0 text-ink-3" />
             </button>
           )
         })}
@@ -699,42 +607,93 @@ function LengthTiles() {
   )
 }
 
+/** Never an empty Home: when a language has no open scenes, say when it's coming and offer a way to work now. */
 function NoWork() {
   const { s, a } = useStore()
+  const name = LANGS[s.lang].name
+  const planned = s.jobs.some((j) => j.lang === s.lang)
+  const counts = new Map<Lang, number>()
+  if (!s.supplyEmpty)
+    for (const j of s.jobs)
+      if (j.campaign === "open" && j.prompts.length > 0 && j.lang !== s.lang)
+        counts.set(j.lang, (counts.get(j.lang) ?? 0) + 1)
+  const spoken = (s.langs ?? [s.lang]).filter((l) => counts.has(l))
+  const offer = (
+    spoken.length
+      ? spoken
+      : [...counts.keys()].sort((x, y) => counts.get(y)! - counts.get(x)!)
+  ).slice(0, 3)
   return (
-    <div className="mx-5 mt-8 rounded-lg bg-surface p-6 text-center shadow-card">
-      {/* Bolo already says this above; the card stays a quiet, flat waveform. */}
-      <Waveform
-        seed={3}
-        bars={28}
-        h={32}
-        progress={0}
-        className="mx-auto max-w-[168px]"
-      />
-      <h3 className="semi mt-4 text-24 font-bold">
-        {LANGS[s.lang].name} is full for now
-      </h3>
-      <p className="mt-2 text-14 leading-relaxed text-ink-2">
-        Labs have enough {LANGS[s.lang].name} recordings for their current
-        campaigns. New ones usually open within 2–3 days. We never show filler
-        work.
-      </p>
-      <div className="mt-5 flex flex-col gap-2">
+    <section className="mx-5 mt-6 overflow-hidden rounded-lg bg-surface shadow-card">
+      <div className="flex items-center gap-4 bg-brand-soft/60 p-5">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/80 text-brand-deep">
+          <Icon n="bell" s={22} />
+        </span>
+        <div className="min-w-0">
+          <span className="eyebrow text-brand-deep">
+            {planned ? "Full for now" : "Coming soon"}
+          </span>
+          <h3 className="semi mt-1 text-18 leading-tight font-semibold">
+            {planned
+              ? `${name} scenes are full`
+              : `${name} scenes are on the way`}
+          </h3>
+        </div>
+      </div>
+      <div className="p-5 pt-4">
+        <p className="text-14 leading-relaxed text-ink-2">
+          {planned
+            ? `Labs have enough ${name} for their current campaigns. New ones usually open within 2–3 days. We never show filler work.`
+            : `Labs are planning ${name} campaigns. Your spot is saved, and rare voices are paid more when they open.`}
+        </p>
         <Btn
+          full
           icon="bell"
           v="voice"
+          className="mt-4"
           onClick={() => (
-            a.enableAlerts(),
-            a.toast(`Bolo will wake you when ${LANGS[s.lang].name} work opens`)
+            a.enableAlerts(), a.toast(`Bolo will wake you when ${name} opens`)
           )}
         >
           Wake me when it opens
         </Btn>
-        <Btn v="outline" onClick={() => a.openSheet("edit")}>
-          Add another language
-        </Btn>
+        {offer.length > 0 && (
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="text-12 font-medium text-ink-2">
+              {spoken.length
+                ? "Record now in another language you speak"
+                : "Also speak one of these?"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {offer.map((l) => (
+                <button
+                  key={l}
+                  onClick={() => a.chooseLang(l)}
+                  className="flex h-10 items-center gap-2 rounded-full bg-surface-2 pr-3.5 pl-3 shadow-[inset_0_0_0_1px_var(--color-line)] transition-transform active:scale-95"
+                >
+                  <span lang={l} className="text-14 font-medium">
+                    {LANGS[l].native}
+                  </span>
+                  <span className="tnum text-12 text-ink-2">
+                    {counts.get(l)} open
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {offer.length === 0 && (
+          <Btn
+            full
+            v="outline"
+            className="mt-2"
+            onClick={() => a.openSheet("edit")}
+          >
+            Add another language
+          </Btn>
+        )}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -743,8 +702,8 @@ function Checklist() {
   const m = shortest(s)
   const items = [
     {
-      l: "Record your first mission",
-      d: m ? `About ${m} minutes with Bolo` : "A short mission with Bolo",
+      l: "Record your first scene",
+      d: m ? `About ${m} minutes with Bolo` : "A short scene with Bolo",
       done: s.submissions.length > 0,
       go: () => a.setTab("jobs"),
       icon: "mic",
@@ -770,45 +729,71 @@ function Checklist() {
       go: () => (a.enableAlerts(), a.toast("Alerts on")),
       icon: "bell",
     },
-  ]
+  ] as const
   const n = items.filter((i) => i.done).length
   return (
-    <Section
-      title="Get set up"
-      action={
-        <span className="tnum text-14 font-semibold text-ink-2">{n}/4</span>
-      }
-      className="mt-10"
+    <section
+      aria-labelledby="setup-h"
+      className="mx-5 mt-4 rounded-lg bg-surface px-4 pt-4 pb-1 shadow-card"
     >
-      <Card className="px-2 py-1">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="setup-h" className="semi text-16 font-semibold">
+          Get set up
+        </h2>
+        <span className="tnum text-12 font-medium text-ink-2">
+          {n} of 4 done
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Setup progress"
+        aria-valuemin={0}
+        aria-valuemax={4}
+        aria-valuenow={n}
+        className="mt-2.5 flex gap-1"
+      >
+        {items.map((it) => (
+          <span
+            key={it.l}
+            className={`h-1 flex-1 rounded-full transition-colors ${
+              it.done ? "bg-money" : "bg-surface-3"
+            }`}
+          />
+        ))}
+      </div>
+      <div className="mt-2 divide-y divide-line">
         {items.map((it) => (
           <button
             key={it.l}
             disabled={it.done}
             onClick={it.go}
-            className="flex w-full items-center gap-3.5 rounded-md px-2 py-3 text-left transition-colors hover:bg-surface-2 disabled:hover:bg-transparent"
+            className="flex min-h-[52px] w-full items-center gap-3 py-2 text-left disabled:cursor-default"
           >
             <span
-              className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${
-                it.done ? "bg-lime text-ink" : "bg-surface-3 text-ink"
+              className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${
+                it.done
+                  ? "bg-money-soft text-money-ink"
+                  : "bg-surface-3 text-ink"
               }`}
             >
-              <Icon n={it.done ? "check" : it.icon} s={16} stroke={2} />
+              <Icon n={it.done ? "check" : it.icon} s={15} stroke={2} />
             </span>
-            <span className="flex-1">
+            <span className="min-w-0 flex-1">
               <span
-                className={`block text-16 font-semibold ${
+                className={`block text-14 font-medium ${
                   it.done ? "text-ink-3 line-through" : ""
                 }`}
               >
                 {it.l}
               </span>
-              <span className="block text-12 text-ink-2">{it.d}</span>
+              <span className="block truncate text-12 text-ink-2">{it.d}</span>
             </span>
-            {!it.done && <Icon n="chev" s={18} className="text-ink-3" />}
+            {!it.done && (
+              <Icon n="chev" s={16} className="shrink-0 text-ink-3" />
+            )}
           </button>
         ))}
-      </Card>
-    </Section>
+      </div>
+    </section>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react"
+import Bolo from "./Bolo"
 import { Icon, Money, inr } from "./kit"
 
 const seen = new Set<string>()
@@ -14,29 +15,29 @@ type Props = {
   cta: string
 }
 
-/* Lime is money that's yours. Approved earnings flood lime; money sent to the bank floods ink with a lime figure. */
+/* Lime is money that's yours. Approved earnings flood money; money sent to the bank floods ink with a money figure. */
 const TONES = {
   earned: {
-    bg: "bg-lime",
+    bg: "grad-money-soft",
     ink: "text-ink",
-    sub: "text-ink/65",
-    badge: "bg-ink text-lime",
-    ring: "border-ink/25",
-    chip: "bg-ink/8",
+    sub: "text-ink-2",
+    badge: "bg-ink text-money",
+    ring: "border-ink/15",
+    chip: "bg-ink/6 text-ink",
     btn: "bg-ink text-white",
-    fig: "",
-    bits: ["#0e0f14", "#2b3bff", "#ffffff", "#ff5a1f"],
+    fig: "text-ink",
+    bits: ["#1C1713", "#F5640F", "#18A06B", "#E39A12"],
   },
   sent: {
-    bg: "bg-ink",
+    bg: "grad-ink",
     ink: "text-white",
-    sub: "text-white/65",
-    badge: "bg-lime text-ink",
-    ring: "border-lime/40",
-    chip: "bg-white/10",
-    btn: "bg-lime text-ink",
-    fig: "text-lime",
-    bits: ["#c6f432", "#ffffff", "#9aa3ff", "#c6f432"],
+    sub: "text-white/70",
+    badge: "bg-money text-ink",
+    ring: "border-money/30",
+    chip: "bg-white/10 text-white",
+    btn: "bg-money text-ink",
+    fig: "text-money",
+    bits: ["#18A06B", "#ffffff", "#FFB07A", "#18A06B"],
   },
 }
 
@@ -80,7 +81,7 @@ export default function MoneyMoment({
     const c = setTimeout(() => {
       setCounting(true)
       navigator.vibrate?.([12, 40, 18])
-    }, 700)
+    }, 120)
     return () => clearTimeout(c)
   }, [open, id])
 
@@ -95,18 +96,18 @@ export default function MoneyMoment({
       role="dialog"
       aria-modal="true"
       aria-label={`${eyebrow} ${inr(amount)}`}
-      className={`reveal absolute inset-0 z-[35] flex flex-col overflow-hidden ${t.bg} ${t.ink} transition-[opacity,scale] duration-[260ms] ease-out ${
+      className={`reveal absolute inset-0 z-[35] flex flex-col justify-between overflow-hidden px-6 pt-20 pb-10 ${t.bg} ${t.ink} transition-[opacity,scale] duration-[260ms] ease-out ${
         leaving ? "scale-[0.98] opacity-0" : ""
       }`}
     >
-      <div className="relative flex flex-1 flex-col items-center justify-center px-6 text-center">
-        {/* tick + rings + burst share one centre */}
-        <div className="relative grid h-28 w-28 place-items-center">
+      <div className="relative flex flex-1 flex-col items-center justify-center text-center">
+        {/* Atmospheric emblem + soft radial rings (inspired by the Payout initiated reference) */}
+        <div className="relative grid h-36 w-36 place-items-center">
           {[0, 250].map((d) => (
             <span
               key={d}
-              className={`ring-out absolute inset-0 rounded-full border-2 ${t.ring}`}
-              style={{ animationDelay: `${620 + d}ms` }}
+              className={`ring-out absolute inset-0 rounded-full border ${t.ring}`}
+              style={{ animationDelay: `${220 + d}ms` }}
             />
           ))}
           {bits.map((b, i) => (
@@ -126,8 +127,8 @@ export default function MoneyMoment({
                   animationDelay: `${b.delay}ms`,
                   background: b.coin
                     ? tone === "earned"
-                      ? "#ffffff"
-                      : "#c6f432"
+                      ? "#18A06B"
+                      : "#18A06B"
                     : b.c,
                   width: b.coin ? undefined : b.w,
                   height: b.coin ? undefined : b.w * 0.5,
@@ -137,62 +138,39 @@ export default function MoneyMoment({
               {b.coin ? "₹" : null}
             </span>
           ))}
-          <span
-            className={`pop-in relative grid h-28 w-28 place-items-center rounded-full ${t.badge} shadow-[0_20px_40px_-12px_rgba(14,15,20,.35)]`}
-            style={{ animationDelay: "320ms" }}
-          >
-            <svg
-              width="52"
-              height="52"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path className="draw" d="M5 12.5l4.5 4.5L19 7.5" />
-            </svg>
-          </span>
+          <div className="pop-in relative grid h-32 w-32 place-items-center rounded-full bg-white/25 backdrop-blur-md">
+            <Bolo mood="cheer" size={108} ground="none" />
+          </div>
         </div>
 
         <div
-          className="rise mt-9 text-16 font-semibold"
-          style={{ animationDelay: "820ms" }}
-        >
-          {eyebrow}
-        </div>
-        <div
-          className={`cond rise mt-2 text-88 font-bold tracking-[-0.02em] ${t.fig}`}
-          style={{ animationDelay: "700ms" }}
+          className={`cond rise mt-6 text-64 font-semibold tracking-[-0.03em] ${t.fig}`}
         >
           <Money
-            value={counting ? amount : 0}
+            value={counting ? amount : amount}
             roll={false}
             sign={tone === "earned"}
           />
         </div>
+        <div className="rise mt-3 text-20 font-semibold">{eyebrow}</div>
         <p
-          className={`rise mt-4 max-w-[28ch] text-16 leading-snug text-balance ${t.sub}`}
-          style={{ animationDelay: "1000ms" }}
+          className={`rise mt-2 max-w-[28ch] text-14 leading-relaxed text-balance ${t.sub}`}
         >
           {line}
         </p>
         {detail && (
           <span
-            className={`rise tnum mt-5 inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-12 font-semibold ${t.chip}`}
-            style={{ animationDelay: "1120ms" }}
+            className={`rise tnum mt-4 inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-12 font-medium ${t.chip}`}
           >
             <Icon n="check" s={13} stroke={2.2} /> {detail}
           </span>
         )}
       </div>
-      <div className="rise px-6 pb-10" style={{ animationDelay: "1350ms" }}>
+      <div className="rise">
         <button
           onClick={close}
           autoFocus
-          className={`h-14 w-full rounded-full text-16 font-semibold transition-transform duration-150 ease-out active:scale-[0.96] ${t.btn}`}
+          className={`h-14 w-full rounded-full text-16 font-medium transition-transform duration-150 ease-out active:scale-[0.97] ${t.btn}`}
         >
           {cta}
         </button>

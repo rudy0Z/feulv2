@@ -20,6 +20,36 @@ importers:
       '@fontsource/mukta-malar':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/noto-sans-arabic':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-gujarati':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-gurmukhi':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-kannada':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-malayalam':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-meetei-mayek':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-ol-chiki':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-oriya':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-telugu':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/plus-jakarta-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/schibsted-grotesk':
         specifier: ^5.3.0
         version: 5.3.0
@@ -86,6 +116,36 @@ packages:
 
   '@fontsource/mukta@5.3.0':
     resolution: {integrity: sha512-BIM9rx9SmHOcVR8cmOba9LnaFwhfiaFcclwgKV9rH4DIdCmD/tBBhtY02GGukuayxSbqfZ6pXzSO88IigTewDw==}
+
+  '@fontsource/noto-sans-arabic@5.3.0':
+    resolution: {integrity: sha512-i3t6GR0LOReyJVEk+YfYCnxv53wuIelg7Y9NGNvOq4Diq/EP0YszaGXkQwfQNigLjfO4POrLaPGM0sNliGYk7A==}
+
+  '@fontsource/noto-sans-gujarati@5.3.0':
+    resolution: {integrity: sha512-vTIzI/j4B6FTQ8LV+0e8Ozp8eXNMHWWD8fsVvfaUjhD6w/TPDugOss88k3eMzDcR5lR+XxQCKgUd6V8qRROjtg==}
+
+  '@fontsource/noto-sans-gurmukhi@5.3.0':
+    resolution: {integrity: sha512-kORmHl4RCqVsPwDPgWxCHWUETSnI+6m6aPsJmGf7K3PJorPKHUZesABxhZcsnYVZkKS/4abE3QgJgjuhWpA13g==}
+
+  '@fontsource/noto-sans-kannada@5.3.0':
+    resolution: {integrity: sha512-mcZlaZfzFIwrjah3hze5W6JnFMk8+bXtw0aKOneeuM/sadyV/F6nIgFiJc9/d9yHeecpVfANt+dWf8VSXDf+3Q==}
+
+  '@fontsource/noto-sans-malayalam@5.3.0':
+    resolution: {integrity: sha512-JVWpPkzNkbZTLradEAu8y5dDCgDsPLzvJrY1mEtt0NGG095aPyfhpTmq+wnGBBhvNRU9WEeATGI/w/YocbjQsg==}
+
+  '@fontsource/noto-sans-meetei-mayek@5.3.0':
+    resolution: {integrity: sha512-7bVWFicCfaLbxvSLdycjoi0b0MX/N+XMtHqJBrqSvSHVJB1zCKAw9gBEOGi+DuKq1i20ROsDmD8H7fVrIcuGHg==}
+
+  '@fontsource/noto-sans-ol-chiki@5.3.0':
+    resolution: {integrity: sha512-Y1e6v15uOncVVlX4DUQIXEfzKHj+DNlIdE8k3fXiJFyG7G4lDdoPHXi5uyW5NoaiyoF/Xd5BpAsH6fEzIJ7nug==}
+
+  '@fontsource/noto-sans-oriya@5.3.0':
+    resolution: {integrity: sha512-nl5R08M+PHfiRJNdlxy5mPDpeFzKa16p14MprNsSKJn7QyJtU3PZ2CHi3x/9vzw05ox+In9i8BmVnPRrK4R/jg==}
+
+  '@fontsource/noto-sans-telugu@5.3.0':
+    resolution: {integrity: sha512-D5AD91Ok2wURk6Vf4sOe2KA3nf0M7qePboNVuvJbguOqLAplh3cGkEIX1qi9u1Jjcz9QWblQ5BbTXI/c+QjB9Q==}
+
+  '@fontsource/plus-jakarta-sans@5.3.0':
+    resolution: {integrity: sha512-9WRw3G74Ve4cyPApAZSXLPY5DiLOZXDn7Q7dIBjFBpA0Pj56ljDItEdy2UUajjJxRuTg2HkMLO5C3K2nAQORWg==}
 
   '@fontsource/schibsted-grotesk@5.3.0':
     resolution: {integrity: sha512-9k+Fd2eg7umKxI2JV2HtDcOkXEM0iJx0u4Iu1b+QHikVU8Sl/MtozJ/mtZfsltR6xnVGSQjpcxXQeJPW0KGpIA==}
@@ -665,6 +725,26 @@ snapshots:
   '@fontsource/mukta-malar@5.3.0': {}
 
   '@fontsource/mukta@5.3.0': {}
+
+  '@fontsource/noto-sans-arabic@5.3.0': {}
+
+  '@fontsource/noto-sans-gujarati@5.3.0': {}
+
+  '@fontsource/noto-sans-gurmukhi@5.3.0': {}
+
+  '@fontsource/noto-sans-kannada@5.3.0': {}
+
+  '@fontsource/noto-sans-malayalam@5.3.0': {}
+
+  '@fontsource/noto-sans-meetei-mayek@5.3.0': {}
+
+  '@fontsource/noto-sans-ol-chiki@5.3.0': {}
+
+  '@fontsource/noto-sans-oriya@5.3.0': {}
+
+  '@fontsource/noto-sans-telugu@5.3.0': {}
+
+  '@fontsource/plus-jakarta-sans@5.3.0': {}
 
   '@fontsource/schibsted-grotesk@5.3.0': {}
 

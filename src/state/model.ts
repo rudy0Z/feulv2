@@ -1,9 +1,11 @@
-export type Lang = "hi" | "mr" | "ta" | "bn" | "en"
+import type { Outfit } from "../ui/Bolo"
+
+export type Lang = "hi" | "bn" | "mr" | "te" | "ta" | "gu" | "ur" | "kn" | "or" | "ml" | "pa" | "as" | "mai" | "sat" | "ks" | "ne" | "sd" | "kok" | "doi" | "mni" | "brx" | "sa" | "en"
 export type Format = "LINES" | "SCENARIO" | "INTERVIEW" | "ROOM"
 export type Tab = "home" | "jobs" | "wallet"
 export type Env = "market" | "food" | "travel" | "health" | "money" | "home"
 
-// Scenes say where the conversation happens.
+// Settings say where the conversation happens (filtered as "Setting"; the work itself is a scene).
 export const ENVS: Record<Env, {
   label: string
   short: string
@@ -38,6 +40,17 @@ export const ENVS: Record<Env, {
 }
 export type OnboardingStage = "landing" | "auth" | "otp" | "language" | "consent" | "mic" | "done"
 
+/* Languages without open campaigns yet only need their name and Bolo's hello; the reading lines
+   fall back to the greeting until labs open work in that language. */
+const L = (native: string, name: string, hello: string) => ({
+  native,
+  name,
+  hello,
+  sample: hello,
+  count: hello,
+  phrase: hello,
+})
+/** Ordered by number of speakers. */
 export const LANGS: Record<Lang, {
   native: string
   name: string
@@ -78,6 +91,24 @@ export const LANGS: Record<Lang, {
     count: "এক, দুই, তিন, চার, পাঁচ",
     phrase: "আজ আবহাওয়া ভালো।",
   },
+  te: L("తెలుగు", "Telugu", "నమస్కారం! నేను బోలో."),
+  gu: L("ગુજરાતી", "Gujarati", "નમસ્તે! હું બોલો છું."),
+  ur: L("اردو", "Urdu", "آداب! میں بولو ہوں۔"),
+  kn: L("ಕನ್ನಡ", "Kannada", "ನಮಸ್ಕಾರ! ನಾನು ಬೋಲೋ."),
+  or: L("ଓଡ଼ିଆ", "Odia", "ନମସ୍କାର! ମୁଁ ବୋଲୋ।"),
+  ml: L("മലയാളം", "Malayalam", "നമസ്കാരം! ഞാൻ ബോലോ."),
+  pa: L("ਪੰਜਾਬੀ", "Punjabi", "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਬੋਲੋ ਹਾਂ।"),
+  as: L("অসমীয়া", "Assamese", "নমস্কাৰ! মই বোলো।"),
+  mai: L("मैथिली", "Maithili", "प्रणाम! हम बोलो छी।"),
+  sat: L("ᱥᱟᱱᱛᱟᱲᱤ", "Santali", "ᱡᱳᱦᱟᱨ!"),
+  ks: L("كٲشُر", "Kashmiri", "آداب!"),
+  ne: L("नेपाली", "Nepali", "नमस्ते! म बोलो हुँ।"),
+  sd: L("سنڌي", "Sindhi", "سلام! مان بولو آهيان."),
+  kok: L("कोंकणी", "Konkani", "नमस्कार! हांव बोलो."),
+  doi: L("डोगरी", "Dogri", "नमस्ते! मैं बोलो आं।"),
+  mni: L("ꯃꯩꯇꯩꯂꯣꯟ", "Manipuri", "ꯈꯨꯔꯨꯝꯖꯔꯤ!"),
+  brx: L("बड़ो", "Bodo", "खुलुमबाय!"),
+  sa: L("संस्कृतम्", "Sanskrit", "नमो नमः! अहं बोलो।"),
   en: {
     native: "English",
     name: "English",
@@ -137,9 +168,56 @@ export type Job = {
   scarcity?: string
   /** What this voice helps build. */
   uses: string
+  /** Bolo's costume for this role, when the setting alone doesn't say it (a chef, a care-line agent). */
+  costume?: Outfit[]
 }
 
-/* ---------- Mission economy ---------- */
+/* ---------- Levels ----------
+   Levels open longer, better-paid roles. They are earned by approved scenes and clean takes,
+   never bought and never lost for one bad take. */
+export const LEVELS: {
+  n: 1 | 2 | 3
+  name: string
+  need: string
+  goal: number
+  unlocks: string[]
+}[] = [
+  {
+    n: 1,
+    name: "New voice",
+    need: "Where everyone starts",
+    goal: 0,
+    unlocks: [
+      "Quick and short scenes",
+      "First deep roles, 10–12 min",
+      "Withdraw from ₹100",
+    ],
+  },
+  {
+    n: 2,
+    name: "Regular",
+    need: "3 approved scenes",
+    goal: 3,
+    unlocks: [
+      "15-minute series and care-line calls",
+      "Up to ₹100 per scene",
+      "1-day settlement",
+    ],
+  },
+  {
+    n: 3,
+    name: "Studio pro",
+    need: "8 approved scenes, 90% clean takes",
+    goal: 8,
+    unlocks: [
+      "Specialist roles and interviews",
+      "Up to ₹250 per scene",
+      "First pick of rare-voice campaigns",
+    ],
+  },
+]
+
+/* ---------- Scene economy ---------- */
 /** Standard contributor rate, ₹ per active hour, before scarcity. */
 export const BASE_RATE = 240
 /** Guaranteed pay once automated checks pass. The quality bonus is separate. */
@@ -154,7 +232,7 @@ export type Length = "quick" | "core" | "deep" | "specialist"
 /** Active-time bands: Quick under 5 min, Core 5–12, Deep 15–25 (in chapters). Specialist shares Deep's
     length but is an expertise track, so it is never inferred from minutes alone. */
 export const lengthOf = (j: Pick<Job, "minutes">): Length =>
-  j.minutes < 5 ? "quick" : j.minutes <= 12 ? "core" : "deep"
+  j.minutes < 5 ? "quick" : j.minutes < 10 ? "core" : "deep"
 // Pay ranges follow from BASE_RATE × minutes, lifted up to 1.8× for rare voices.
 export const LENGTHS: Record<Length, {
   label: string
@@ -172,16 +250,16 @@ export const LENGTHS: Record<Length, {
   },
   core: {
     label: "Core",
-    range: "5–12 min",
-    pay: "₹20–85",
-    line: "Where most missions live",
+    range: "5–9 min",
+    pay: "₹20–60",
+    line: "A short conversation",
     icon: "circle",
   },
   deep: {
-    label: "Deep",
-    range: "15–25 min",
+    label: "Deep role",
+    range: "10–15 min",
     pay: "₹60–180",
-    line: "Chapters, saved as you go",
+    line: "Play a full role. The best pay per scene",
     icon: "layers",
   },
   specialist: {
@@ -544,10 +622,10 @@ export const JOBS: Job[] = [
     env: "travel",
     situation:
       "The driver quotes double the meter fare at night. Get to a fair price without a fight.",
-    minutes: 5,
-    base: 20,
+    minutes: 10,
+    base: 40,
     coverage: 1.8,
-    bonus: 4,
+    bonus: 10,
     environment: "Anywhere, traffic sound is welcome",
     campaign: "open",
     tier: 1,
@@ -583,7 +661,7 @@ export const JOBS: Job[] = [
     minutes: 15,
     base: 60,
     coverage: 1.5,
-    bonus: 12,
+    bonus: 20,
     environment: "Anywhere, station-like noise is welcome",
     campaign: "open",
     tier: 2,
@@ -630,6 +708,181 @@ export const JOBS: Job[] = [
     ],
   }),
   J({
+    id: "j-counter-hi",
+    title: "Pharmacy counter",
+    lang: "hi",
+    format: "SCENARIO",
+    env: "health",
+    costume: ["glasses", "pills"],
+    situation:
+      "Your father has a fever. Bolo plays the pharmacist: you describe it, compare two medicines, and pay.",
+    minutes: 12,
+    base: 48,
+    coverage: 1.4,
+    bonus: 12,
+    environment: "Quiet room, or a shop-like murmur",
+    campaign: "open",
+    tier: 1,
+    image: img("1613262155980-c9e47252316b"),
+    scarcity: "Long pharmacy conversations with real back-and-forth are rare.",
+    uses: "Pharmacy assistants that understand doses, prices and worried family members.",
+    prompts: [
+      {
+        id: "k0",
+        chapter: "At the counter",
+        stem: "Pharmacist: “हाँ जी, क्या चाहिए?”",
+        text: "Ask for something for your father's fever and sore throat.",
+      },
+      {
+        id: "k1",
+        chapter: "At the counter",
+        stem: "Pharmacist: “पर्ची है? उनकी उम्र क्या है?”",
+        text: "Say there's no prescription, give his age, and mention he has diabetes.",
+      },
+      {
+        id: "k2",
+        chapter: "Choosing a medicine",
+        stem: "Pharmacist: “ये सिरप शुगर-फ़्री है, ये गोली सस्ती है।”",
+        text: "Compare the two and ask which suits him better.",
+      },
+      {
+        id: "k3",
+        chapter: "Choosing a medicine",
+        stem: "Pharmacist: “खाने के बाद, दिन में दो बार।”",
+        text: "Repeat the dose back in your own words to be sure.",
+      },
+      {
+        id: "k4",
+        chapter: "Paying up",
+        stem: "Pharmacist: “कुल 186 रुपये हुए।”",
+        text: "Ask if there's a cheaper brand, then pay by UPI.",
+      },
+      {
+        id: "k5",
+        chapter: "Paying up",
+        stem: "Pharmacist: “तीन दिन में आराम न हो तो डॉक्टर को दिखाइए।”",
+        text: "Thank them and ask what time the shop closes tonight.",
+      },
+    ],
+  }),
+  J({
+    id: "j-care-hi",
+    title: "Customer-care call",
+    lang: "hi",
+    format: "SCENARIO",
+    env: "home",
+    costume: ["headset"],
+    situation:
+      "Your washing machine stopped mid-wash. Bolo is the helpline agent: get through, explain, and book a visit.",
+    minutes: 15,
+    base: 60,
+    coverage: 1.3,
+    bonus: 20,
+    environment: "Anywhere you'd make a phone call",
+    campaign: "open",
+    tier: 2,
+    image: img("1771328842284-e48b807ef747"),
+    scarcity:
+      "Whole support calls, from greeting to complaint number, are scarce.",
+    uses: "Care-line assistants that can follow a complaint across a full call.",
+    prompts: [
+      {
+        id: "c0",
+        chapter: "Getting through",
+        stem: "Agent: “नमस्ते, मैं रिया बोल रही हूँ। बताइए क्या मदद करूँ?”",
+        text: "Explain the machine stopped mid-wash with water still inside.",
+      },
+      {
+        id: "c1",
+        chapter: "Getting through",
+        stem: "Agent: “अपना रजिस्टर्ड मोबाइल नंबर बताइए।”",
+        text: "Read out a made-up 10-digit number, slowly.",
+      },
+      {
+        id: "c2",
+        chapter: "Explaining the problem",
+        stem: "Agent: “स्क्रीन पर कोई एरर कोड दिख रहा है?”",
+        text: "Describe what the display shows and the noise it made.",
+      },
+      {
+        id: "c3",
+        chapter: "Explaining the problem",
+        stem: "Agent: “वारंटी पिछले महीने ख़त्म हो गई।”",
+        text: "Push back politely: you bought it barely a year ago.",
+      },
+      {
+        id: "c4",
+        chapter: "Booking a visit",
+        stem: "Agent: “टेक्नीशियन कल 12 से 4 के बीच आएँगे।”",
+        text: "Say that doesn't work and ask for a morning slot.",
+      },
+      {
+        id: "c5",
+        chapter: "Booking a visit",
+        stem: "Agent: “अपनी शिकायत संख्या नोट कर लीजिए।”",
+        text: "Ask them to repeat it, then confirm you've written it down.",
+      },
+    ],
+  }),
+  J({
+    id: "j-dinner-hi",
+    title: "Family dinner plan",
+    lang: "hi",
+    format: "SCENARIO",
+    env: "food",
+    costume: ["chef"],
+    situation:
+      "Guests are coming on Saturday. Bolo plays your mother in the kitchen: plan the menu, the shopping, and the save.",
+    minutes: 12,
+    base: 48,
+    coverage: 1.5,
+    bonus: 12,
+    environment: "Kitchen sounds are welcome",
+    campaign: "open",
+    tier: 1,
+    image: img("1610733661495-4aa6ed9fc6f4"),
+    scarcity: "Relaxed family talk at home is underrepresented in speech data.",
+    uses: "Home assistants that follow how families actually plan together.",
+    prompts: [
+      {
+        id: "d0",
+        chapter: "What to cook",
+        stem: "Mother: “मौसी लोग शनिवार को आ रहे हैं, क्या बनाएँ?”",
+        text: "Suggest a menu: one sabzi, a dal and something sweet.",
+      },
+      {
+        id: "d1",
+        chapter: "What to cook",
+        stem: "Mother: “मौसाजी तीखा नहीं खाते।”",
+        text: "Change the menu and say what to make less spicy.",
+      },
+      {
+        id: "d2",
+        chapter: "The shopping list",
+        stem: "Mother: “घर में पनीर नहीं है, और क्या चाहिए?”",
+        text: "List what to buy, and how much, for eight people.",
+      },
+      {
+        id: "d3",
+        chapter: "The shopping list",
+        stem: "Mother: “बाज़ार कौन जाएगा?”",
+        text: "Offer to go, and say when you'll be back.",
+      },
+      {
+        id: "d4",
+        chapter: "On the day",
+        stem: "Mother: “अरे, दाल में नमक ज़्यादा हो गया!”",
+        text: "Calmly suggest a way to fix it.",
+      },
+      {
+        id: "d5",
+        chapter: "On the day",
+        stem: "Mother: “मेहमान आ गए, जल्दी आओ!”",
+        text: "Greet the guests at the door the way you would at home.",
+      },
+    ],
+  }),
+  J({
     id: "j-delivery-hi",
     title: "Cold food, late rider",
     lang: "hi",
@@ -637,10 +890,10 @@ export const JOBS: Job[] = [
     env: "food",
     situation:
       "Your delivery arrived 40 minutes late and cold. Call support and ask for a refund.",
-    minutes: 5,
-    base: 20,
+    minutes: 12,
+    base: 48,
     coverage: 1.4,
-    bonus: 4,
+    bonus: 12,
     environment: "Indoor",
     campaign: "open",
     tier: 1,
@@ -708,10 +961,10 @@ export const JOBS: Job[] = [
     env: "home",
     situation:
       "Your neighbour’s tank has been overflowing onto your balcony all morning. Talk it through.",
-    minutes: 6,
-    base: 24,
+    minutes: 12,
+    base: 48,
     coverage: 1.3,
-    bonus: 4,
+    bonus: 12,
     environment: "Home",
     campaign: "open",
     tier: 2,
@@ -743,10 +996,10 @@ export const JOBS: Job[] = [
     env: "money",
     situation:
       "A helpline agent asks about money that left your account but never reached the shop.",
-    minutes: 12,
-    base: 48,
+    minutes: 15,
+    base: 60,
     coverage: 1.5,
-    bonus: 8,
+    bonus: 20,
     environment: "Quiet room",
     campaign: "open",
     tier: 3,
@@ -802,10 +1055,10 @@ export const JOBS: Job[] = [
     env: "market",
     situation:
       "Explain to a tailor how you want an old kurta altered before a wedding.",
-    minutes: 5,
-    base: 20,
+    minutes: 10,
+    base: 40,
     coverage: 1.2,
-    bonus: 4,
+    bonus: 10,
     environment: "Indoor",
     campaign: "open",
     tier: 2,
@@ -872,10 +1125,10 @@ export const JOBS: Job[] = [
     format: "SCENARIO",
     env: "travel",
     situation: "A stranger asks you which bus goes to the market.",
-    minutes: 4,
-    base: 16,
+    minutes: 10,
+    base: 40,
     coverage: 1.6,
-    bonus: 3,
+    bonus: 10,
     environment: "Outdoor is fine",
     campaign: "open",
     tier: 1,
@@ -899,10 +1152,10 @@ export const JOBS: Job[] = [
     format: "SCENARIO",
     env: "market",
     situation: "Buy vegetables and ask for a better price on tomatoes.",
-    minutes: 4,
-    base: 16,
+    minutes: 10,
+    base: 40,
     coverage: 1.7,
-    bonus: 3,
+    bonus: 10,
     environment: "Outdoor is fine",
     campaign: "open",
     tier: 1,
@@ -930,10 +1183,10 @@ export const JOBS: Job[] = [
     format: "SCENARIO",
     env: "food",
     situation: "Pick a fish and ask the seller to clean and cut it.",
-    minutes: 4,
-    base: 16,
+    minutes: 10,
+    base: 40,
     coverage: 1.6,
-    bonus: 3,
+    bonus: 10,
     environment: "Market noise is fine",
     campaign: "open",
     tier: 1,
@@ -991,11 +1244,11 @@ export const JOBS: Job[] = [
   }),
 ]
 
-export const CONSENT_COPY: Record<Lang, {
+export const CONSENT_COPY: Partial<Record<Lang, {
   title: string
   points: [string, string][]
   agree: string
-}> = {
+}>> = {
   hi: {
     title: "रिकॉर्ड करने से पहले, आपकी सहमति",
     points: [

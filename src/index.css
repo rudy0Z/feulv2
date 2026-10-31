@@ -1,101 +1,128 @@
-@import url('https://fonts.googleapis.com/css2?family=Anek+Latin:wdth,wght@75..125,100..800&family=Anek+Devanagari:wdth,wght@75..125,100..800&family=Anek+Tamil:wdth,wght@75..125,100..800&family=Anek+Bangla:wdth,wght@75..125,100..800&display=swap');
-/* Bundled Indic fallbacks: fetched only for glyphs Anek can't supply (e.g. offline), so scripts never fall to tofu. */
+/* Every face is bundled so all 23 languages render offline and on slow networks; unicode-range keeps downloads to the scripts in use. */
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/schibsted-grotesk/400.css';
+@import '@fontsource/schibsted-grotesk/500.css';
+@import '@fontsource/schibsted-grotesk/600.css';
 @import '@fontsource/mukta/devanagari-400.css';
 @import '@fontsource/mukta/devanagari-600.css';
-@import '@fontsource/mukta/devanagari-700.css';
 @import '@fontsource/mukta-malar/tamil-400.css';
 @import '@fontsource/mukta-malar/tamil-700.css';
 @import '@fontsource/hind-siliguri/bengali-400.css';
 @import '@fontsource/hind-siliguri/bengali-600.css';
-@import '@fontsource/hind-siliguri/bengali-700.css';
+@import '@fontsource/noto-sans-telugu/telugu-400.css';
+@import '@fontsource/noto-sans-telugu/telugu-600.css';
+@import '@fontsource/noto-sans-kannada/kannada-400.css';
+@import '@fontsource/noto-sans-kannada/kannada-600.css';
+@import '@fontsource/noto-sans-malayalam/malayalam-400.css';
+@import '@fontsource/noto-sans-malayalam/malayalam-600.css';
+@import '@fontsource/noto-sans-gujarati/gujarati-400.css';
+@import '@fontsource/noto-sans-gujarati/gujarati-600.css';
+@import '@fontsource/noto-sans-gurmukhi/gurmukhi-400.css';
+@import '@fontsource/noto-sans-gurmukhi/gurmukhi-600.css';
+@import '@fontsource/noto-sans-oriya/oriya-400.css';
+@import '@fontsource/noto-sans-oriya/oriya-600.css';
+@import '@fontsource/noto-sans-ol-chiki/ol-chiki-400.css';
+@import '@fontsource/noto-sans-ol-chiki/ol-chiki-600.css';
+@import '@fontsource/noto-sans-meetei-mayek/meetei-mayek-400.css';
+@import '@fontsource/noto-sans-meetei-mayek/meetei-mayek-600.css';
+@import '@fontsource/noto-sans-arabic/arabic-400.css';
+@import '@fontsource/noto-sans-arabic/arabic-600.css';
 @import '@fontsource/geist-mono/400.css';
 @import '@fontsource/geist-mono/500.css';
 @import 'tailwindcss';
 
-/* FEUL visual grammar
-   One meaning per colour:
-   cobalt = voice (Bolo, recording, anything you say)
-   lime   = money that is yours (approved, available, paid) — never decoration
-   orange = waiting on someone (pending review, retry, held)
-   ink    = focus (studio, primary text, neutral primary actions)
-   red    = destructive or final failure only                                       */
+/* FEUL design system
+   Colour has one job each. Nothing else gets a hue.
+   brand (saffron) = voice: Bolo, recording, starting a scene, the one thing to do next
+   ink             = structure: text, primary buttons, focus surfaces
+   money (green)   = money that is yours: approved, available, paid
+   wait (amber)    = waiting on someone: review, retake, held
+   red             = destructive or final failure only
+   Surfaces are warm paper (canvas) and white (surface); depth comes from one soft shadow.
+
+   Spacing: 4pt grid. Screen margin 20 (px-5). Section gap 32 (mt-8). Row padding 12–14.
+   Radius:  sm 12 (chips, inputs, small tiles) · md 16 (rows, tiles, notices) · lg 24 (cards, sheets) · full (buttons, pills).
+   Type:    display 30 · title 24 · heading 18 · body 16 · secondary 14 · caption 12. Weights 400/500/600 only. */
 @theme {
-  --font-sans: 'Anek Latin', 'Anek Devanagari', 'Anek Tamil', 'Anek Bangla', 'Mukta', 'Mukta Malar', 'Hind Siliguri', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Mukta', 'Mukta Malar', 'Hind Siliguri', 'Noto Sans Telugu', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Gujarati', 'Noto Sans Gurmukhi', 'Noto Sans Oriya', 'Noto Sans Ol Chiki', 'Noto Sans Meetei Mayek', 'Noto Sans Arabic', 'Schibsted Grotesk', system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
 
-  --color-canvas: #edeff4;
+  --color-canvas: #f7f6f3;
   --color-surface: #ffffff;
-  --color-surface-2: #f5f6f9;
-  --color-surface-3: #e7e9ef;
-  --color-ink: #0e0f14;
-  --color-ink-2: #555a6c;
-  --color-ink-3: #8b90a1;
-  --color-line: #e3e5eb;
-  --color-line-2: #cfd3dc;
+  --color-surface-2: #f2f0ec;
+  --color-surface-3: #e9e6e1;
+  --color-ink: #1c1713;
+  --color-ink-2: #625950;
+  --color-ink-3: #9b9188;
+  --color-line: #e7e3dd;
+  --color-line-2: #d6d1c9;
 
-  --color-cobalt: #2b3bff;
-  --color-cobalt-hi: #5866ff;
-  --color-cobalt-deep: #1a23c4;
-  --color-cobalt-night: #0a0e52;
-  --color-cobalt-soft: #e8eaff;
-  --color-peri: #9aa3ff;
+  --color-brand: #f5640f;
+  --color-brand-hi: #ff8338;
+  --color-brand-deep: #cc4a00;
+  --color-brand-night: #3d1704;
+  --color-brand-soft: #ffede0;
+  --color-brand-tint: #ffb07a;
 
-  --color-lime: #c6f432;
-  --color-lime-soft: #effbc8;
-  --color-lime-ink: #3d5600;
+  --color-money: #18a06b;
+  --color-money-soft: #e3f5ec;
+  --color-money-ink: #0d6a45;
 
-  --color-orange: #ff5a1f;
-  --color-orange-soft: #ffeadf;
-  --color-orange-ink: #b93a08;
+  --color-wait: #e39a12;
+  --color-wait-soft: #fff2d6;
+  --color-wait-ink: #8a5800;
 
-  --color-red: #d92d20;
-  --color-red-soft: #fde9e7;
+  --color-red: #d63a2f;
+  --color-red-soft: #fde8e6;
 
-  --color-studio: #0a0b10;
-  --color-studio-2: #14151d;
-  --color-studio-3: #1f212b;
-  --color-studio-line: #2a2d39;
-  --color-studio-ink: #f2f3f8;
-  --color-studio-ink-2: #9a9eb0;
-  --color-studio-ink-3: #636779;
+  --color-studio: #16110d;
+  --color-studio-2: #201a15;
+  --color-studio-3: #2c241e;
+  --color-studio-line: #3b322a;
+  --color-studio-ink: #fbf6f0;
+  --color-studio-ink-2: #bdb0a3;
+  --color-studio-ink-3: #85786b;
 
-  --radius-sm: 8px;
-  --radius-md: 14px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
   --radius-lg: 24px;
 
   --text-11: 11px;
   --text-11--line-height: 1.3;
   --text-12: 12px;
-  --text-12--line-height: 1.35;
+  --text-12--line-height: 1.4;
   --text-14: 14px;
-  --text-14--line-height: 1.4;
+  --text-14--line-height: 1.45;
   --text-16: 16px;
   --text-16--line-height: 1.45;
   --text-18: 18px;
   --text-18--line-height: 1.35;
   --text-20: 20px;
-  --text-20--line-height: 1.22;
+  --text-20--line-height: 1.3;
   --text-24: 24px;
-  --text-24--line-height: 1.1;
+  --text-24--line-height: 1.22;
   --text-30: 30px;
-  --text-30--line-height: 1.02;
-  --text-38: 38px;
-  --text-38--line-height: 0.98;
-  --text-48: 48px;
-  --text-48--line-height: 0.92;
-  --text-64: 64px;
-  --text-64--line-height: 0.88;
-  --text-88: 88px;
-  --text-88--line-height: 0.84;
+  --text-30--line-height: 1.14;
+  --text-38: 34px;
+  --text-38--line-height: 1.1;
+  --text-48: 44px;
+  --text-48--line-height: 1.05;
+  --text-64: 52px;
+  --text-64--line-height: 1;
+  --text-88: 72px;
+  --text-88--line-height: 1;
 
-  --shadow-card: 0 0 0 1px rgb(14 15 20 / 0.05), 0 1px 2px rgb(14 15 20 / 0.04), 0 10px 28px -14px rgb(14 15 20 / 0.14);
-  --shadow-float: 0 0 0 1px rgb(14 15 20 / 0.06), 0 2px 6px rgb(14 15 20 / 0.06), 0 24px 48px -16px rgb(14 15 20 / 0.38);
-  --shadow-cobalt: 0 14px 30px -10px rgb(43 59 255 / 0.62), inset 0 1px 0 rgb(255 255 255 / 0.22);
-  --shadow-lime: 0 14px 30px -12px rgb(130 170 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.5);
+  --shadow-card: 0 1px 2px rgb(28 23 19 / 0.04), 0 10px 28px -16px rgb(28 23 19 / 0.14);
+  --shadow-float: 0 0 0 1px rgb(28 23 19 / 0.05), 0 2px 6px rgb(28 23 19 / 0.05), 0 24px 48px -18px rgb(28 23 19 / 0.32);
+  --shadow-brand: 0 12px 26px -12px rgb(245 100 15 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.22);
+  --shadow-money: 0 12px 26px -12px rgb(13 106 69 / 0.45);
 
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
-  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1);
+  --ease-pop: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-spring: cubic-bezier(0.3, 1.2, 0.5, 1);
 }
 
 @property --lid {
@@ -114,7 +141,7 @@
     -webkit-tap-highlight-color: transparent;
   }
   ::selection {
-    background: var(--color-cobalt-soft);
+    background: var(--color-brand-soft);
   }
   button:not(:disabled) {
     cursor: pointer;
@@ -123,7 +150,7 @@
     cursor: not-allowed;
   }
   :focus-visible {
-    outline: 2px solid var(--color-cobalt);
+    outline: 2px solid var(--color-brand);
     outline-offset: 2px;
   }
   h1,
@@ -131,24 +158,33 @@
   h3 {
     text-wrap: balance;
   }
+  /* Three weights only: 400 body, 500 emphasis, 600 headings and figures. */
+  .font-bold {
+    font-weight: 600;
+  }
+  .font-semibold {
+    font-weight: 600;
+  }
 }
 
-/* Anek's width axis is the typographic signature: condensed for money and headlines, normal for reading. */
 @utility cond {
-  font-stretch: 76%;
+  letter-spacing: -0.02em;
+  font-weight: 600;
 }
 @utility semi {
-  font-stretch: 88%;
+  letter-spacing: -0.015em;
+  font-weight: 600;
 }
 @utility wide {
-  font-stretch: 112%;
+  font-stretch: 100%;
 }
 @utility tnum {
   font-variant-numeric: tabular-nums;
 }
 /* Indic scripts need extra leading for matras and conjuncts. */
 @utility script {
-  line-height: 1.42;
+  line-height: 1.5;
+  font-weight: 500;
 }
 @utility no-scrollbar {
   scrollbar-width: none;
@@ -157,24 +193,55 @@
   }
 }
 @utility eyebrow {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-stretch: 88%;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Atmospheres: used for one surface per screen at most. */
+.grad-voice {
+  background: radial-gradient(140% 100% at 50% 0%, #ff9450 0%, #f87a2c 40%, #f5640f 100%);
+}
+/* One long, eased warm light from the top: no visible bands or rings */
+.grad-dawn {
+  background:
+    radial-gradient(160% 85% at 50% 0%, #ffb27a 0%, #ff9a52 30%, #fb7f32 62%, #f5640f 100%);
+}
+/* Soft light behind Bolo: a single falloff instead of stacked discs */
+.halo {
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    rgb(255 255 255 / 0.3) 0%,
+    rgb(255 255 255 / 0.18) 35%,
+    rgb(255 255 255 / 0.07) 65%,
+    rgb(255 255 255 / 0) 100%
+  );
+}
+.grad-ink {
+  background: radial-gradient(130% 120% at 80% -10%, #3a2c22 0%, #1f1813 55%, #16110d 100%);
+}
+.grad-soft {
+  background: linear-gradient(180deg, #fff3e9 0%, #ffffff 100%);
+}
+.grad-money-soft {
+  background: radial-gradient(120% 100% at 50% 0%, #d4f1e2 0%, #ecf8f1 60%, #ffffff 100%);
+}
+.grad-studio-card {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.08) 0%, rgb(255 255 255 / 0.04) 100%);
 }
 
 /* Sticky bars frost only once content scrolls under them. */
 @keyframes glass-light {
   to {
-    background-color: rgb(237 239 244 / 0.8);
-    backdrop-filter: blur(18px) saturate(1.7);
-    box-shadow: 0 1px 0 rgb(14 15 20 / 0.07);
+    background-color: rgb(247 246 243 / 0.86);
+    backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 1px 0 rgb(28 23 19 / 0.06);
   }
 }
 @keyframes glass-dark {
   to {
-    background-color: rgb(10 11 16 / 0.78);
+    background-color: rgb(22 17 13 / 0.8);
     backdrop-filter: blur(18px);
     box-shadow: 0 1px 0 rgb(255 255 255 / 0.06);
   }
@@ -189,121 +256,103 @@
   animation-name: glass-dark;
 }
 
-/* ---------- Bolo ---------- */
-@keyframes bolo-bob {
-  50% { transform: translateY(-3px); }
+/* ---------- Bolo: one gentle idle, one wave, one hop. Nothing loops fast. ---------- */
+@keyframes bolo-breathe {
+  50% { transform: translateY(1.2px) scale(1.02, 0.98); }
 }
 @keyframes bolo-shadow {
-  50% { transform: scaleX(0.86); opacity: 0.7; }
+  50% { transform: scaleX(0.9); opacity: 0.75; }
 }
 @keyframes bolo-blink {
-  0%, 91%, 100% { transform: scaleY(var(--lid)); }
-  94.5% { transform: scaleY(1); }
+  0%, 92%, 100% { transform: scaleY(var(--lid)); }
+  95% { transform: scaleY(1); }
 }
 @keyframes bolo-sway {
   0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(0.82); }
-}
-@keyframes bolo-eq {
-  0%, 100% { transform: scaleY(0.5); }
-  50% { transform: scaleY(1.22); }
-}
-@keyframes bolo-meq {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(1); }
+  50% { transform: scaleY(0.86); }
 }
 @keyframes bolo-hop {
   0% { transform: translateY(0) scale(1, 1); }
-  18% { transform: translateY(1px) scale(1.06, 0.92); }
-  45% { transform: translateY(-11px) scale(0.96, 1.05); }
-  75% { transform: translateY(0) scale(1.05, 0.94); }
+  20% { transform: translateY(1px) scale(1.04, 0.95); }
+  48% { transform: translateY(-8px) scale(0.98, 1.03); }
+  78% { transform: translateY(0) scale(1.03, 0.97); }
   100% { transform: translateY(0) scale(1, 1); }
 }
 @keyframes bolo-hop-shadow {
-  45% { transform: scaleX(0.6); opacity: 0.4; }
+  48% { transform: scaleX(0.7); opacity: 0.5; }
 }
-@keyframes bolo-shake {
-  15%, 55% { transform: translateX(-2.2px) rotate(-2deg); }
-  35%, 75% { transform: translateX(2.2px) rotate(2deg); }
-  100% { transform: none; }
+@keyframes bolo-nod {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  30% { transform: rotate(-3deg) translateY(1.5px); }
+  60% { transform: rotate(1.5deg) translateY(0); }
 }
-@keyframes bolo-breathe {
-  50% { transform: translateY(1px) scale(1.025, 0.975); }
+@keyframes bolo-tilt {
+  to { transform: rotate(-7deg); }
 }
-@keyframes bolo-orbit {
-  to { transform: rotate(360deg); }
+@keyframes bolo-laugh {
+  0%, 100% { transform: translateY(0); }
+  25%, 75% { transform: translateY(-1.5px); }
+  50% { transform: translateY(0.5px); }
+}
+@keyframes bolo-wave {
+  0%, 100% { transform: rotate(0deg); }
+  35% { transform: rotate(16deg); }
+  75% { transform: rotate(-10deg); }
+}
+@keyframes bolo-pump {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(12deg); }
+}
+@keyframes bolo-arc {
+  0% { transform: scale(0.7); opacity: 0; }
+  35% { opacity: 0.9; }
+  100% { transform: scale(1.3); opacity: 0; }
 }
 @keyframes bolo-zz {
   0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
   25% { opacity: 1; }
-  100% { transform: translate(8px, -18px) scale(1.1); opacity: 0; }
-}
-@keyframes bolo-arc {
-  0% { transform: scale(0.6); opacity: 0; }
-  30% { opacity: 1; }
-  100% { transform: scale(1.35); opacity: 0; }
-}
-@keyframes bolo-wave {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(-22deg); }
-}
-@keyframes bolo-pump {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(14deg); }
+  100% { transform: translate(8px, -16px) scale(1.05); opacity: 0; }
 }
 @keyframes bolo-sparkle {
-  0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
-  40% { transform: scale(1) rotate(45deg); opacity: 1; }
-  70% { transform: scale(0.8) rotate(90deg); opacity: 0.9; }
+  0%, 100% { transform: scale(0); opacity: 0; }
+  45% { transform: scale(1) rotate(45deg); opacity: 1; }
 }
-@keyframes bolo-pop {
-  0% { transform: scale(0.6); }
-  60% { transform: scale(1.08); }
-  100% { transform: scale(1); }
+@keyframes bolo-orbit {
+  to { transform: rotate(360deg); }
 }
-@keyframes bolo-jitter {
-  0%, 100% { transform: scaleY(1) skewX(0); }
-  25% { transform: scaleY(0.6) skewX(8deg); }
-  50% { transform: scaleY(1.15) skewX(-6deg); }
-  75% { transform: scaleY(0.75) skewX(4deg); }
+@keyframes bolo-steam {
+  0% { transform: translateY(2px); opacity: 0; }
+  40% { opacity: 0.8; }
+  100% { transform: translateY(-6px); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .b-bob { animation: bolo-bob 3.4s ease-in-out infinite; }
-  .b-bob-slow { animation: bolo-bob 5.2s ease-in-out infinite; }
-  .b-shadow { animation: bolo-shadow 3.4s ease-in-out infinite; }
-  .b-shadow-slow { animation: bolo-shadow 5.2s ease-in-out infinite; }
-  .b-hop { animation: bolo-hop 620ms var(--ease-out) both; }
-  .b-hop-loop { animation: bolo-hop 760ms var(--ease-out) infinite; }
-  .b-hop-shadow { animation: bolo-hop-shadow 620ms var(--ease-out) both; }
-  .b-hop-shadow-loop { animation: bolo-hop-shadow 760ms var(--ease-out) infinite; }
-  .b-shake { animation: bolo-shake 520ms var(--ease-out) both; }
-  .b-breathe { animation: bolo-breathe 4.6s ease-in-out infinite; }
-  .b-pop { animation: bolo-pop 520ms var(--ease-pop) both; }
-  .b-lid { animation: bolo-blink 5.4s infinite; }
-  .b-sway { animation: bolo-sway 2.8s ease-in-out infinite; }
-  .b-eq { animation: bolo-eq 0.46s ease-in-out infinite; }
-  .b-eq-slow { animation: bolo-eq 1.3s ease-in-out infinite; }
-  .b-jitter { animation: bolo-jitter 0.3s steps(2) infinite; }
-  .b-meq { animation: bolo-meq 0.34s ease-in-out infinite; }
-  .b-orbit { animation: bolo-orbit 2.6s linear infinite; }
-  .b-zz { animation: bolo-zz 2.6s ease-out infinite; }
-  .b-arc { animation: bolo-arc 1.2s ease-out infinite; }
-  .b-wave { animation: bolo-wave 0.55s ease-in-out infinite; }
-  .b-pump { animation: bolo-pump 0.38s ease-in-out infinite; }
-  .b-sparkle { animation: bolo-sparkle 1.6s ease-in-out infinite; }
+  .b-breathe { animation: bolo-breathe 5.6s ease-in-out infinite; }
+  .b-shadow { animation: bolo-shadow 5.6s ease-in-out infinite; }
+  .b-hop { animation: bolo-hop 640ms var(--ease-out) both; }
+  .b-hop2 { animation: bolo-hop 760ms var(--ease-out) 2; }
+  .b-hop-shadow { animation: bolo-hop-shadow 640ms var(--ease-out) both; }
+  .b-nod { animation: bolo-nod 700ms ease-in-out 2; }
+  .b-tilt { animation: bolo-tilt 420ms var(--ease-out) both; }
+  .b-laugh { animation: bolo-laugh 520ms ease-in-out 2; }
+  .b-lid { animation: bolo-blink 6.4s infinite; }
+  .b-sway { animation: bolo-sway 4.6s ease-in-out infinite; }
+  .b-wave { animation: bolo-wave 620ms ease-in-out 4; }
+  .b-pump { animation: bolo-pump 520ms ease-in-out 3; }
+  .b-arc { animation: bolo-arc 1.4s ease-out infinite; }
+  .b-zz { animation: bolo-zz 2.8s ease-out infinite; }
+  .b-sparkle { animation: bolo-sparkle 1.8s ease-in-out 2; }
+  .b-orbit { animation: bolo-orbit 3.2s linear infinite; }
+  .b-steam { animation: bolo-steam 2.4s ease-out infinite; }
 }
 .b-lid { transform: scaleY(var(--lid)); transition: --lid 260ms var(--ease-out); }
 
-/* ---------- UI motion ---------- */
-@keyframes rise {
-  from { opacity: 0; transform: translateY(12px); }
-}
+/* ---------- UI motion: short, quiet, purposeful ---------- */
 @keyframes fade {
   from { opacity: 0; }
 }
-@keyframes word-in {
-  from { opacity: 0; filter: blur(5px); transform: translateY(4px); }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
 }
 @keyframes grow-x {
   from { transform: scaleX(0); }
@@ -311,27 +360,16 @@
 @keyframes grow-y {
   from { transform: scaleY(0); }
 }
-@keyframes sheen {
-  from { transform: translateX(-120%); }
-  to { transform: translateX(320%); }
-}
 @keyframes ping-soft {
-  0% { transform: scale(1); opacity: 0.55; }
-  100% { transform: scale(2.4); opacity: 0; }
+  0% { transform: scale(1); opacity: 0.35; }
+  100% { transform: scale(1.9); opacity: 0; }
 }
 @keyframes draw {
   to { stroke-dashoffset: 0; }
 }
 @keyframes shake {
-  20%, 60% { transform: translateX(-6px); }
-  40%, 80% { transform: translateX(6px); }
-}
-@keyframes bell {
-  0%, 100% { transform: rotate(0); }
-  15% { transform: rotate(14deg); }
-  30% { transform: rotate(-12deg); }
-  45% { transform: rotate(8deg); }
-  60% { transform: rotate(-4deg); }
+  25%, 75% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
 }
 @keyframes burst {
   0% { transform: translate(-50%, -50%) rotate(0) scale(0.4); opacity: 0; }
@@ -343,42 +381,47 @@
   to { clip-path: circle(150% at 50% 44%); }
 }
 @keyframes ring-out {
-  from { transform: scale(1); opacity: 0.6; }
-  to { transform: scale(2.6); opacity: 0; }
+  from { transform: scale(1); opacity: 0.5; }
+  to { transform: scale(2.2); opacity: 0; }
 }
 @keyframes pulse-dot {
-  50% { opacity: 0.35; }
+  50% { opacity: 0.45; }
 }
 @keyframes pop-in {
-  0% { transform: scale(0.4); opacity: 0; }
-  60% { transform: scale(1.08); opacity: 1; }
+  0% { transform: scale(0.7); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
 .draw { stroke-dasharray: 30; stroke-dashoffset: 30; }
 .burst, .ring-out { opacity: 0; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .rise { animation: rise 520ms var(--ease-out) both; }
-  .fade-in { animation: fade 260ms ease-out both; }
-  .word { display: inline-block; animation: word-in 380ms var(--ease-out) both; }
-  .grow-x { animation: grow-x 900ms var(--ease-out) both; transform-origin: left; }
-  .grow-y { animation: grow-y 700ms var(--ease-pop) both; transform-origin: bottom; }
-  .sheen { animation: sheen 2.8s cubic-bezier(0.4, 0, 0.2, 1) 700ms infinite; }
-  .ping-soft { animation: ping-soft 1.6s var(--ease-out) infinite; }
-  .draw { animation: draw 420ms cubic-bezier(0.6, 0, 0.2, 1) 560ms forwards; }
-  .shake { animation: shake 360ms ease-out; }
-  .bell-ring { animation: bell 900ms ease-in-out 600ms both; transform-origin: 50% 15%; }
+  .rise { animation: rise 260ms var(--ease-out) both; }
+  .fade-in { animation: fade 200ms ease-out both; }
+  .word { display: inline; }
+  .grow-x { animation: grow-x 520ms var(--ease-out) both; transform-origin: left; }
+  .grow-y { animation: grow-y 460ms var(--ease-out) both; transform-origin: bottom; }
+  .sheen { opacity: 0; }
+  .ping-soft { animation: ping-soft 2.4s var(--ease-out) infinite; }
+  .draw { animation: draw 420ms cubic-bezier(0.6, 0, 0.2, 1) 400ms forwards; }
+  .shake { animation: shake 300ms ease-out; }
   .burst { animation: burst 1300ms cubic-bezier(0.1, 0.7, 0.3, 1) both; }
-  .reveal { animation: reveal 640ms cubic-bezier(0.7, 0, 0.2, 1) both; }
-  .ring-out { animation: ring-out 1100ms var(--ease-out) both; }
-  .pulse-dot { animation: pulse-dot 1.2s ease-in-out infinite; }
-  .pop-in { animation: pop-in 520ms var(--ease-pop) both; }
+  .reveal { animation: reveal 560ms cubic-bezier(0.7, 0, 0.2, 1) both; }
+  .ring-out { animation: ring-out 1200ms var(--ease-out) both; }
+  .pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+  .pop-in { animation: pop-in 320ms var(--ease-out) both; }
 }
 @media (prefers-reduced-motion: reduce) {
   .draw { stroke-dashoffset: 0; }
-  .word { display: inline-block; }
 }
 
 number-flow-react {
   --number-flow-char-height: 0.9em;
+}
+
+@keyframes bolo-talk {
+  0%, 100% { transform: scaleY(0.45); }
+  50% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .b-talk { animation: bolo-talk 300ms ease-in-out infinite; }
 }

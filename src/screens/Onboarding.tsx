@@ -1,61 +1,18 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ComponentType,
-  type ReactNode,
-} from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { useReducedMotion } from "motion/react"
 import { CONSENT_COPY, JOBS, LANGS, jobTotal, type Lang } from "../state/model"
 import { sel, useStore } from "../state/store"
-import Bolo, {
-  BoloStage,
-  Bubble,
-  Typed,
-  VoiceRing,
-  type Mood,
-} from "../ui/Bolo"
+import Bolo, { BoloBadge, type Mood, type Outfit } from "../ui/Bolo"
 import {
   BackBar,
   Btn,
   Icon,
   IconBtn,
   Tag,
-  Waveform,
   Wordmark,
   inr,
   useTone,
 } from "../ui/kit"
-
-/* ---------- Plates ----------
-   Onboarding speaks in full-bleed colour plates. Each plate sets the status-bar ink above it. */
-
-type PlateTone = "cobalt" | "orange" | "lime" | "studio"
-const PLATE: Record<PlateTone, string> = {
-  cobalt: "bg-cobalt text-white",
-  orange: "bg-orange text-white",
-  lime: "bg-lime text-ink",
-  studio: "bg-studio text-studio-ink",
-}
-
-function Plate({
-  tone,
-  className = "",
-  children,
-}: {
-  tone: PlateTone
-  className?: string
-  children: ReactNode
-}) {
-  useTone(tone === "lime" ? "dark" : "light")
-  return (
-    <div
-      className={`relative shrink-0 overflow-hidden rounded-b-[40px] pt-[54px] transition-[background-color,height] duration-500 ease-(--ease-out) ${PLATE[tone]} ${className}`}
-    >
-      {children}
-    </div>
-  )
-}
 
 type StepsProps = {
   n: 1 | 2
@@ -82,311 +39,275 @@ function Steps({ n, onBack }: StepsProps) {
           />
         ))}
       </div>
-      <span className="tnum w-11 pr-3 text-right text-12 font-semibold text-ink-3">
+      <span className="tnum w-11 pr-3 text-right text-12 font-medium text-ink-3">
         {n}/2
       </span>
     </div>
   )
 }
 
-/** Highlighted words sit behind the title's text (the h1 isolates), so a wrapped highlight never covers the line above. */
-const Hl = ({
-  tone,
-  children,
-}: {
-  tone: "orange" | "lime"
-  children: ReactNode
-}) => (
-  <span
-    className={`relative -z-10 rounded-[10px] px-1.5 box-decoration-clone ${
-      tone === "orange" ? "bg-orange text-white" : "bg-lime text-ink"
-    }`}
-  >
-    {children}
-  </span>
-)
-
-/* ---------- Intro ---------- */
+/* ---------- Intro: one warm surface. Bolo waves, says hello, and the story sits right under it. ---------- */
 
 const SHOP = JOBS.find((j) => j.id === "j-shop-hi")!
-const HELLO: Lang[] = ["hi", "ta", "bn", "mr", "en"]
+const DEEP = JOBS.find((j) => j.id === "j-rail-hi")!
+const HELLO: Lang[] = ["hi", "ta", "bn", "te", "mr", "kn", "en"]
 
-/** Bolo greets in every script it directs while the ring pulses with its voice: one system, mascot plus waveform. */
-function HeroSpeak() {
+const SLIDES: {
+  tag: string
+  title: string
+  body: string
+  mood: Mood
+  outfit?: Outfit[]
+}[] = [
+  {
+    tag: "Speak",
+    title: "Your voice is the work",
+    body: "Talk the way you do at home, in any Indian language. I set the scene and play the other person. You just reply.",
+    mood: "hello",
+  },
+  {
+    tag: "Heard by people",
+    title: "Every take gets a real listener",
+    body: "Reviewers hear what you record. If one turn needs a redo, you see which one and why. The rest stays accepted.",
+    mood: "nod",
+    outfit: ["headphones"],
+  },
+  {
+    tag: "Get paid",
+    title: "The price is locked before you start",
+    body: `Deep roles of 10 to 15 minutes pay up to ${inr(jobTotal(DEEP) + DEEP.bonus)}. Cash out to UPI from ₹100.`,
+    mood: "cheer",
+    outfit: ["coin"],
+  },
+]
+
+/** Bolo's greeting, cycling through scripts. The bubble's tail points at Bolo, so it reads as Bolo talking. */
+function Greeting({ onSpeak }: { onSpeak: (on: boolean) => void }) {
   const reduce = useReducedMotion()
   const [k, setK] = useState(0)
-  const [mood, setMood] = useState<Mood>("hello")
-  useEffect(() => {
-    const t = window.setTimeout(() => setMood("speak"), 1500)
-    return () => clearTimeout(t)
-  }, [])
+  const speak = useRef(onSpeak)
+  speak.current = onSpeak
   useEffect(() => {
     if (reduce) return
-    const t = window.setInterval(
-      () => setK((x) => (x + 1) % HELLO.length),
-      2800,
-    )
+    const t = window.setInterval(() => {
+      setK((x) => (x + 1) % HELLO.length)
+      speak.current(true)
+      window.setTimeout(() => speak.current(false), 1100)
+    }, 2800)
     return () => clearInterval(t)
   }, [reduce])
   const l = HELLO[k]
   return (
-    <div className="flex h-full flex-col items-center justify-end pb-4">
-      <Bubble tail="center" className="mb-1 min-w-[216px] text-center">
-        <p lang={l} className="script text-20 font-semibold">
-          <Typed text={LANGS[l].hello} step={70} />
-        </p>
-        <p className="text-11 font-semibold tracking-[0.06em] text-ink-3 uppercase">
-          {LANGS[l].name}
-        </p>
-      </Bubble>
-      <div className="relative grid h-[228px] w-[228px] place-items-center">
-        <div className="absolute inset-0">
-          <VoiceRing mode="bolo" size={228} inner={76} />
-        </div>
-        <Bolo
-          mood={mood}
-          tone="white"
-          size={128}
-          ground="none"
-          label="Bolo, saying hello"
-        />
-      </div>
-    </div>
-  )
-}
-
-function HeroReview() {
-  const clip = (t: string, ok: boolean, r: string, seed: number) => (
-    <div
-      className={`flex items-center gap-3 rounded-md bg-white p-3 text-ink shadow-[0_18px_36px_-18px_rgba(120,30,0,.6)] ${r}`}
-    >
-      <span
-        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${
-          ok ? "bg-lime text-ink" : "bg-orange text-white"
-        }`}
+    <div className="relative rounded-lg rounded-br-sm bg-white px-4 py-3 text-ink shadow-[0_16px_32px_-16px_rgba(120,40,0,.55)]">
+      <p
+        key={l}
+        lang={l}
+        className="script fade-in text-18 font-semibold whitespace-nowrap"
       >
-        <Icon n={ok ? "check" : "retry"} s={17} stroke={2.2} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-14 font-semibold">{t}</div>
-        <Waveform
-          seed={seed}
-          bars={40}
-          h={12}
-          tone={ok ? "ink" : "orange"}
-          className="mt-1.5"
-        />
-      </div>
-    </div>
-  )
-  return (
-    <div
-      aria-hidden
-      className="relative flex h-full flex-col justify-center gap-2.5 px-8"
-    >
-      {clip("Turn 1 · accepted", true, "rotate-[1.5deg]", 3)}
-      {clip("Turn 2 · accepted", true, "-rotate-[1deg] ml-4", 7)}
-      {clip("Turn 3 · TV in the background", false, "rotate-[2deg] -mr-2", 11)}
-      <span className="absolute top-4 right-7 rotate-[4deg] rounded-full bg-ink px-3.5 py-1.5 text-14 font-semibold text-white shadow-float">
-        <span className="tnum">2 of 3</span> accepted
-      </span>
-      <span className="absolute bottom-4 left-10 -rotate-[3deg] rounded-full bg-white px-3 py-1 text-12 font-semibold text-orange-ink shadow-card">
-        Redo just turn 3 · about 30 s
-      </span>
+        {LANGS[l].hello.split("!")[0]}!
+      </p>
+      <p className="text-12 text-ink-3">{LANGS[l].name}</p>
+      <span
+        aria-hidden
+        className="absolute -right-1.5 bottom-3 h-3.5 w-3.5 rotate-45 rounded-[3px] bg-white"
+      />
     </div>
   )
 }
 
-function HeroPaid() {
+function ReviewChips() {
   return (
-    <div
-      aria-hidden
-      className="relative flex h-full items-center justify-center px-9"
-    >
-      <div className="relative w-full rotate-[2.5deg] rounded-lg bg-white p-5 text-ink shadow-[0_28px_48px_-20px_rgba(40,60,0,.55)]">
-        <div className="flex items-center gap-1.5 text-12 font-semibold text-ink-2">
-          <Icon n="lock" s={13} stroke={2} /> Locked before you record
-        </div>
-        <div className="mt-1.5 flex items-end gap-2.5">
-          <span className="cond tnum text-64 font-bold">
-            {inr(jobTotal(SHOP))}
-          </span>
-          <span className="pb-1.5 text-12 leading-tight text-ink-2">
-            guaranteed
-            <br />
-            {SHOP.title}
-          </span>
-        </div>
-        <span className="tnum mt-2 inline-flex h-6 items-center gap-1 rounded-full bg-lime-soft px-2.5 text-12 font-semibold text-lime-ink">
-          <Icon n="gift" s={13} /> +{inr(SHOP.bonus)} quality bonus, paid
-          separately
+    <>
+      <span className="fade-in absolute top-[18%] left-5 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-12 font-medium text-ink shadow-card">
+        <span className="grid h-5 w-5 place-items-center rounded-full bg-money text-white">
+          <Icon n="check" s={12} stroke={2.6} />
         </span>
-        <div className="my-4 border-t-2 border-dashed border-line" />
-        <div className="flex justify-between text-12">
-          <span className="text-ink-3">UTR</span>
-          <span className="tnum font-mono font-medium">412893018842</span>
-        </div>
-        <span
-          className="pop-in absolute -top-5 -right-3 grid h-[76px] w-[76px] -rotate-[14deg] place-items-center rounded-full bg-ink text-12 font-bold tracking-[0.12em] text-lime uppercase"
-          style={{ animationDelay: "380ms" }}
-        >
-          Paid
+        Turn 1 accepted
+      </span>
+      <span
+        className="fade-in absolute top-[34%] right-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-12 font-medium text-ink shadow-card"
+        style={{ animationDelay: "160ms" }}
+      >
+        <span className="grid h-5 w-5 place-items-center rounded-full bg-wait text-white">
+          <Icon n="retry" s={12} stroke={2.4} />
         </span>
-      </div>
-    </div>
+        Redo turn 3 · 30 s
+      </span>
+    </>
   )
 }
 
-const SLIDES: {
-  tone: PlateTone
-  tag: string
-  title: ReactNode
-  body: string
-  Hero: ComponentType
-}[] = [
-  {
-    tone: "cobalt",
-    tag: "Speak",
-    title: (
-      <>
-        Your voice <span className="text-cobalt">is the job.</span>
-      </>
-    ),
-    body: "Talk the way you do at home, in हिन्दी, தமிழ், বাংলা and more. Bolo, your studio director, sets every scene. Missions start at 2 minutes.",
-    Hero: HeroSpeak,
-  },
-  {
-    tone: "orange",
-    tag: "Review",
-    title: (
-      <>
-        No silent rejections. <Hl tone="orange">Ever.</Hl>
-      </>
-    ),
-    body: "A real reviewer hears every take. If one turn needs a redo, you see which one and why, and the rest stays accepted.",
-    Hero: HeroReview,
-  },
-  {
-    tone: "lime",
-    tag: "Get paid",
-    title: (
-      <>
-        {SHOP.minutes} minutes.{" "}
-        <Hl tone="lime">{inr(jobTotal(SHOP))}, locked in.</Hl>
-      </>
-    ),
-    body: "The price is locked before you press record, and quality bonuses come on top. Cash out from ₹100, tracked by UTR.",
-    Hero: HeroPaid,
-  },
-]
+function PayChips() {
+  return (
+    <>
+      <span className="fade-in absolute top-[16%] left-5 rounded-lg bg-white px-3.5 py-2.5 text-ink shadow-card">
+        <span className="block text-11 text-ink-3">
+          Locked before you record
+        </span>
+        <span className="tnum cond block text-20">
+          {inr(jobTotal(SHOP))}{" "}
+          <span className="text-12 font-medium text-money-ink">
+            +{inr(SHOP.bonus)} bonus
+          </span>
+        </span>
+      </span>
+      <span
+        className="fade-in absolute top-[38%] right-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-12 font-medium text-ink shadow-card"
+        style={{ animationDelay: "160ms" }}
+      >
+        <Icon n="bank" s={14} /> Paid to UPI · UTR shown
+      </span>
+    </>
+  )
+}
 
 export function Landing() {
   const { a } = useStore()
+  useTone("light")
   const [i, setI] = useState(0)
+  const [talk, setTalk] = useState(false)
+  const [waving, setWaving] = useState(true)
   const x0 = useRef<number | null>(null)
   const sl = SLIDES[i]
   const last = i === SLIDES.length - 1
-  const Hero = sl.Hero
+  // Wave on arrival, then settle into a warm idle; wave again whenever you come back to the first slide.
+  useEffect(() => {
+    setWaving(true)
+    const t = window.setTimeout(() => setWaving(false), 2600)
+    return () => clearTimeout(t)
+  }, [i])
+  const mood: Mood =
+    i === 0
+      ? waving
+        ? "hello"
+        : talk
+          ? "speak"
+          : "idle"
+      : waving
+        ? sl.mood
+        : i === 1
+          ? "listen"
+          : "happy"
   const swipe = (dx: number) => {
     if (dx < -48 && !last) setI(i + 1)
     else if (dx > 48 && i > 0) setI(i - 1)
   }
   return (
-    <div className="flex flex-1 flex-col">
-      <Plate tone={sl.tone} className={last ? "h-[342px]" : "h-[448px]"}>
-        <div className="flex h-12 items-center justify-between px-6">
-          <Wordmark dark={sl.tone !== "lime"} />
-          {!last && (
-            <button
-              onClick={() => setI(SLIDES.length - 1)}
-              className="-mr-3 h-11 rounded-full px-3 text-16 font-semibold opacity-85 transition-opacity hover:opacity-100"
-            >
-              Skip
-            </button>
-          )}
-        </div>
-        <div
-          key={i}
-          className={`rise touch-pan-y ${last ? "h-[240px]" : "h-[346px]"}`}
-          onPointerDown={(e) => (x0.current = e.clientX)}
-          onPointerUp={(e) => {
-            if (x0.current != null) swipe(e.clientX - x0.current)
-            x0.current = null
-          }}
-        >
-          <Hero />
-        </div>
-      </Plate>
+    <div
+      className="grad-dawn relative flex flex-1 flex-col overflow-hidden text-white"
+      onPointerDown={(e) => (x0.current = e.clientX)}
+      onPointerUp={(e) => {
+        if (x0.current != null) swipe(e.clientX - x0.current)
+        x0.current = null
+      }}
+    >
+      <div className="flex h-[98px] items-end justify-between px-5 pb-2">
+        <Wordmark dark />
+        {!last && (
+          <button
+            onClick={() => setI(SLIDES.length - 1)}
+            className="-mr-3 h-11 rounded-full px-3 text-16 font-medium text-white/85 hover:text-white"
+          >
+            Skip
+          </button>
+        )}
+      </div>
 
-      <div className="flex flex-1 flex-col px-6 pt-6 pb-8">
+      {/* Hero: Bolo and what Bolo says, together */}
+      <div className="relative flex flex-1 touch-pan-y items-end justify-center">
+        <span
+          aria-hidden
+          className="halo absolute top-1/2 left-1/2 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2"
+        />
+        {i === 1 && <ReviewChips key="r" />}
+        {i === 2 && <PayChips key="p" />}
+        <div className="relative mb-2 flex flex-col items-center">
+          {i === 0 && (
+            <div className="absolute -top-6 right-[58%] z-10">
+              <Greeting onSpeak={setTalk} />
+            </div>
+          )}
+          <Bolo
+            mood={mood}
+            tone="white"
+            size={196}
+            ground="none"
+            outfit={sl.outfit}
+            label="Bolo, your studio director"
+          />
+        </div>
+      </div>
+
+      <div className="px-5 pt-6 pb-8">
         <div key={i} className="rise">
-          <span className="eyebrow tnum text-ink-3">
-            0{i + 1} · {sl.tag}
+          <span className="text-14 font-medium text-white/75">
+            {i + 1} of {SLIDES.length} · {sl.tag}
           </span>
-          <h1 className="semi isolate mt-2 text-38 leading-[1.02] font-bold tracking-[-0.03em]">
-            {sl.title}
-          </h1>
-          <p className="mt-3 text-16 leading-snug text-pretty text-ink-2">
+          <h1 className="semi mt-1.5 text-30 font-semibold">{sl.title}</h1>
+          <p className="mt-2 text-16 leading-snug text-pretty text-white/85">
             {sl.body}
           </p>
         </div>
-
-        <div className="mt-auto pt-6">
-          <div
-            className="mb-3 flex justify-center gap-0.5"
-            role="tablist"
-            aria-label="Introduction"
-          >
-            {SLIDES.map((x, k) => (
-              <button
-                key={x.tag}
-                role="tab"
-                aria-selected={k === i}
-                aria-label={`${k + 1} of ${SLIDES.length}: ${x.tag}`}
-                onClick={() => setI(k)}
-                className="grid h-6 place-items-center px-1"
-              >
-                <span
-                  className={`block h-1.5 rounded-full transition-[width,background-color] duration-300 ${
-                    k === i ? "w-6 bg-ink" : "w-1.5 bg-line-2"
-                  }`}
-                />
-              </button>
-            ))}
-          </div>
-          {last ? (
-            <div className="flex flex-col gap-2.5">
-              <p className="mb-1 flex items-center justify-center gap-2 text-12 leading-snug text-ink-2">
-                <span className="rounded-full bg-ink px-2 py-0.5 text-11 font-bold tracking-wide text-white">
-                  18+
-                </span>
-                Adults only. Your number is never shown to anyone.
-              </p>
-              <Btn full size="lg" icon="lock" onClick={() => a.stage("auth")}>
-                Continue with mobile number
-              </Btn>
-              <Btn full size="lg" v="outline" onClick={() => a.stage("auth")}>
-                <span className="text-18 font-bold text-[#4285F4]">G</span>{" "}
-                Continue with Google
-              </Btn>
-              <p className="text-center text-12 text-ink-3">
-                Continuing means you accept our{" "}
-                <span className="font-semibold text-ink-2 underline underline-offset-2">
-                  Terms
-                </span>{" "}
-                and{" "}
-                <span className="font-semibold text-ink-2 underline underline-offset-2">
-                  Privacy Policy
-                </span>
-                .
-              </p>
-            </div>
-          ) : (
-            <Btn full size="lg" iconRight="arrow" onClick={() => setI(i + 1)}>
-              Next
-            </Btn>
-          )}
+        <div
+          className="mt-6 mb-4 flex gap-1.5"
+          role="tablist"
+          aria-label="Introduction"
+        >
+          {SLIDES.map((x, k) => (
+            <button
+              key={x.tag}
+              role="tab"
+              aria-selected={k === i}
+              aria-label={`${k + 1} of ${SLIDES.length}: ${x.tag}`}
+              onClick={() => setI(k)}
+              className="grid h-6 place-items-center"
+            >
+              <span
+                className={`block h-1.5 rounded-full transition-[width,background-color] duration-300 ${
+                  k === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
+                }`}
+              />
+            </button>
+          ))}
         </div>
+        {last ? (
+          <div className="flex flex-col gap-2.5">
+            <Btn
+              full
+              size="lg"
+              v="white"
+              icon="lock"
+              onClick={() => a.stage("auth")}
+            >
+              Continue with mobile number
+            </Btn>
+            <Btn full size="lg" v="glass" onClick={() => a.stage("auth")}>
+              <span className="text-18 font-semibold">G</span> Continue with
+              Google
+            </Btn>
+            <p className="mt-1 text-center text-12 leading-snug text-white/75">
+              18+ only. Continuing means you accept our{" "}
+              <span className="font-medium text-white underline underline-offset-2">
+                Terms
+              </span>{" "}
+              and{" "}
+              <span className="font-medium text-white underline underline-offset-2">
+                Privacy Policy
+              </span>
+              .
+            </p>
+          </div>
+        ) : (
+          <Btn
+            full
+            size="lg"
+            v="white"
+            iconRight="arrow"
+            onClick={() => setI(i + 1)}
+          >
+            {i === 0 ? "Get started" : "Next"}
+          </Btn>
+        )}
       </div>
     </div>
   )
@@ -395,22 +316,20 @@ export function Landing() {
 /* ---------- Sign in: plain and calm ---------- */
 
 function AuthHead({
-  icon,
   title,
+  outfit,
+  mood = "idle",
   children,
 }: {
-  icon: string
   title: string
+  outfit?: Outfit[]
+  mood?: Mood
   children: ReactNode
 }) {
   return (
     <div className="rise flex flex-col items-center text-center">
-      <span className="grid h-16 w-16 -rotate-6 place-items-center rounded-lg bg-cobalt text-white shadow-cobalt">
-        <Icon n={icon} s={28} />
-      </span>
-      <h1 className="semi mt-7 text-30 font-bold tracking-[-0.025em]">
-        {title}
-      </h1>
+      <BoloBadge size={88} mood={mood} outfit={outfit} />
+      <h1 className="semi mt-6 text-24 font-semibold">{title}</h1>
       <div className="mt-2 max-w-[30ch] text-16 leading-snug text-pretty text-ink-2">
         {children}
       </div>
@@ -425,42 +344,42 @@ export function Auth() {
   return (
     <div className="flex flex-1 flex-col">
       <BackBar onBack={() => a.stage("landing")} />
-      <div className="flex flex-1 flex-col px-6 pt-8 pb-8">
-        <AuthHead icon="lock" title="Enter your mobile number">
-          We'll text a 6-digit code. Payouts go to a UPI in your name.
-        </AuthHead>
-        <label className="mt-9 flex h-[60px] items-center gap-3 rounded-full bg-surface pr-5 pl-2 shadow-[0_0_0_1.5px_var(--color-line-2)] transition-shadow focus-within:shadow-[0_0_0_2px_var(--color-cobalt)]">
-          <span className="tnum flex h-11 items-center rounded-full bg-surface-3 px-3.5 text-16 font-semibold">
-            +91
-          </span>
-          <input
-            inputMode="numeric"
-            autoComplete="tel-national"
-            name="phone"
-            aria-label="Mobile number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="tnum min-w-0 flex-1 bg-transparent text-20 font-semibold tracking-[0.02em] outline-none"
-          />
-          {ok && <Icon n="check" s={20} stroke={2.2} className="text-cobalt" />}
-        </label>
-        {!ok && phone && (
-          <p className="mt-2 pl-5 text-14 text-red">
-            Enter a 10-digit mobile number.
-          </p>
-        )}
-        <Btn
-          full
-          size="lg"
-          className="mt-4"
-          disabled={!ok}
-          onClick={() => a.stage("otp")}
-        >
-          Send code
-        </Btn>
-        <Btn full v="ghost" className="mt-2" onClick={() => a.stage("landing")}>
-          Use a different method
-        </Btn>
+      <div className="flex flex-1 flex-col justify-between px-5 pt-6 pb-8">
+        <div>
+          <AuthHead title="Enter your mobile number" outfit={["phone"]}>
+            We'll text a 6-digit code. Payouts go to a UPI in your name.
+          </AuthHead>
+          <label className="mt-8 flex h-[60px] items-center gap-3 rounded-full bg-surface pr-5 pl-2 shadow-[0_0_0_1.5px_var(--color-line-2)] transition-shadow focus-within:shadow-[0_0_0_2px_var(--color-brand)]">
+            <span className="tnum flex h-11 items-center rounded-full bg-surface-3 px-3.5 text-16 font-medium">
+              +91
+            </span>
+            <input
+              inputMode="numeric"
+              autoComplete="tel-national"
+              name="phone"
+              aria-label="Mobile number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="tnum min-w-0 flex-1 bg-transparent text-20 font-medium tracking-[0.02em] outline-none"
+            />
+            {ok && (
+              <Icon n="check" s={20} stroke={2.2} className="text-brand" />
+            )}
+          </label>
+          {!ok && phone && (
+            <p className="mt-2 pl-5 text-14 text-red">
+              Enter a 10-digit mobile number.
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Btn full size="lg" disabled={!ok} onClick={() => a.stage("otp")}>
+            Send code
+          </Btn>
+          <Btn full v="ghost" onClick={() => a.stage("landing")}>
+            Use a different method
+          </Btn>
+        </div>
       </div>
     </div>
   )
@@ -538,7 +457,7 @@ export function Otp() {
       onKeyDown={(e) =>
         e.key === "Backspace" && !d[i] && i > 0 && refs.current[i - 1]?.focus()
       }
-      className={`tnum h-[60px] w-full min-w-0 bg-transparent text-center text-24 font-bold outline-none placeholder:text-ink-3/40 focus:bg-cobalt-soft disabled:opacity-40 ${
+      className={`tnum h-[60px] w-full min-w-0 bg-transparent text-center text-24 font-semibold outline-none placeholder:text-ink-3/40 focus:bg-brand-soft disabled:opacity-40 ${
         i % 3 ? "border-l border-line" : ""
       }`}
       placeholder="0"
@@ -547,80 +466,111 @@ export function Otp() {
   return (
     <div className="flex flex-1 flex-col">
       <BackBar onBack={() => a.stage("auth")} />
-      <div className="flex flex-1 flex-col px-6 pt-8 pb-8">
-        <AuthHead icon="shield" title="Enter your code">
-          Sent to{" "}
-          <span className="tnum font-semibold text-ink">+91 98204 55121</span>
-          <span className="block text-12 text-ink-3">
-            Prototype code: 123456
-          </span>
-        </AuthHead>
-        <div
-          key={shake}
-          className={`mt-9 flex items-center gap-3 ${shake ? "shake" : ""}`}
-        >
-          {[0, 3].map((o) => (
-            <div
-              key={o}
-              className={`flex flex-1 overflow-hidden rounded-md bg-surface ${
-                err
-                  ? "shadow-[0_0_0_2px_var(--color-red)]"
-                  : "shadow-[0_0_0_1.5px_var(--color-line-2)]"
-              }`}
-            >
-              {[o, o + 1, o + 2].map(box)}
-            </div>
-          ))}
-        </div>
-        {err && (
-          <p role="alert" className="mt-3 text-center text-14 text-red">
-            {err} {lock > 0 && <span className="tnum">({lock}s)</span>}
-          </p>
-        )}
-        <Btn
-          full
-          size="lg"
-          className="mt-4"
-          disabled={code.length < 6 || lock > 0}
-          loading={busy}
-          onClick={verify}
-        >
-          Verify
-        </Btn>
-        <Btn
-          full
-          v="outline"
-          className="mt-2.5"
-          disabled={wait > 0 || lock > 0}
-          onClick={() => setWait(45)}
-        >
-          {wait > 0 ? (
-            <span className="tnum">
-              Resend code in 0:{String(wait).padStart(2, "0")}
+      <div className="flex flex-1 flex-col justify-between px-5 pt-6 pb-8">
+        <div>
+          <AuthHead title="Enter your code" mood="curious">
+            Sent to{" "}
+            <span className="tnum font-medium text-ink">+91 98204 55121</span>
+            <span className="block text-12 text-ink-3">
+              Prototype code: 123456
             </span>
-          ) : (
-            "Resend code"
+          </AuthHead>
+          <div
+            key={shake}
+            className={`mt-8 flex items-center gap-3 ${shake ? "shake" : ""}`}
+          >
+            {[0, 3].map((o) => (
+              <div
+                key={o}
+                className={`flex flex-1 overflow-hidden rounded-md bg-surface ${
+                  err
+                    ? "shadow-[0_0_0_2px_var(--color-red)]"
+                    : "shadow-[0_0_0_1.5px_var(--color-line-2)]"
+                }`}
+              >
+                {[o, o + 1, o + 2].map(box)}
+              </div>
+            ))}
+          </div>
+          {err && (
+            <p role="alert" className="mt-3 text-center text-14 text-red">
+              {err} {lock > 0 && <span className="tnum">({lock}s)</span>}
+            </p>
           )}
-        </Btn>
-        <Btn full v="ghost" className="mt-1" onClick={() => a.stage("auth")}>
-          Change number
-        </Btn>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Btn
+            full
+            size="lg"
+            disabled={code.length < 6 || lock > 0}
+            loading={busy}
+            onClick={verify}
+          >
+            Verify
+          </Btn>
+          <Btn
+            full
+            v="outline"
+            disabled={wait > 0 || lock > 0}
+            onClick={() => setWait(45)}
+          >
+            {wait > 0 ? (
+              <span className="tnum">
+                Resend code in 0:{String(wait).padStart(2, "0")}
+              </span>
+            ) : (
+              "Resend code"
+            )}
+          </Btn>
+          <Btn full v="ghost" onClick={() => a.stage("auth")}>
+            Change number
+          </Btn>
+        </div>
       </div>
     </div>
   )
 }
 
-/* ---------- Language: Bolo answers in the script you pick ---------- */
+/* ---------- Language: every Indian language, as compact chips. Bolo answers in the script you pick. ---------- */
+
+const ORDER: Lang[] = [
+  "hi",
+  "bn",
+  "mr",
+  "te",
+  "ta",
+  "gu",
+  "ur",
+  "kn",
+  "or",
+  "ml",
+  "pa",
+  "as",
+  "mai",
+  "sat",
+  "ks",
+  "ne",
+  "sd",
+  "kok",
+  "doi",
+  "mni",
+  "brx",
+  "sa",
+  "en",
+]
+const OPEN = new Set(
+  JOBS.filter((j) => j.campaign === "open").map((j) => j.lang),
+)
 
 export function Language() {
   const { s, a } = useStore()
-  const keys = Object.keys(LANGS) as Lang[]
   const picked = s.langs ?? [s.lang]
   const [said, setSaid] = useState<Lang>(picked[0])
+  const [q, setQ] = useState("")
   const [mood, setMood] = useState<Mood>("hello")
   useEffect(() => {
-    setMood("hello")
-    const t = window.setTimeout(() => setMood("idle"), 1500)
+    setMood("speak")
+    const t = window.setTimeout(() => setMood("idle"), 1200)
     return () => clearTimeout(t)
   }, [said])
   const toggle = (k: Lang, on: boolean) => {
@@ -628,88 +578,116 @@ export function Language() {
     if (!on) setSaid(k)
     else if (said === k) setSaid(picked.find((l) => l !== k) ?? k)
   }
+  const list = ORDER.filter(
+    (k) =>
+      !q ||
+      LANGS[k].name.toLowerCase().includes(q.toLowerCase()) ||
+      LANGS[k].native.includes(q),
+  )
+  const noneOpen = picked.every((l) => !OPEN.has(l))
   return (
     <div className="flex flex-1 flex-col">
       <Steps n={1} onBack={() => a.stage("otp")} />
-      <div className="px-6 pt-3">
-        <h1 className="semi text-30 font-bold tracking-[-0.025em]">
-          Which languages can you record in?
+      <div className="px-5 pt-2">
+        <h1 className="semi text-24 font-semibold">
+          Which languages do you speak?
         </h1>
-        <p className="mt-2 text-16 leading-snug text-pretty text-ink-2">
-          Pick every language you speak comfortably. More languages, more
-          missions. The app itself stays in English.
+        <p className="mt-1 text-14 leading-snug text-ink-2">
+          Pick every one you speak comfortably. The app stays in English.
         </p>
       </div>
-      <div className="mt-5 flex items-center gap-1 px-6">
-        <div className="-ml-2 shrink-0">
-          <Bolo mood={mood} size={66} label="Bolo" />
-        </div>
-        <Bubble tail="left" className="flex-1">
+
+      <div className="mt-4 flex items-end gap-2 px-5">
+        <Bolo mood={mood} size={56} ground="none" label="Bolo" />
+        <div className="relative mb-2 min-w-0 rounded-lg rounded-bl-sm bg-surface px-3.5 py-2.5 shadow-card">
+          <span
+            aria-hidden
+            className="absolute bottom-2.5 -left-1.5 h-3 w-3 rotate-45 rounded-[2px] bg-surface"
+          />
           <p
+            key={said}
             lang={said}
-            className="script text-18 font-semibold"
-            aria-live="polite"
+            dir="auto"
+            className="script fade-in relative truncate text-16 font-medium"
           >
-            <Typed text={LANGS[said].hello} step={60} />
+            {LANGS[said].hello}
           </p>
-          <p className="text-12 text-ink-3">
-            Bolo will direct you in {LANGS[said].name}
-          </p>
-        </Bubble>
+        </div>
       </div>
+
+      <label className="mx-5 mt-4 flex h-11 items-center gap-2 rounded-full bg-surface px-4 text-ink-3 shadow-[inset_0_0_0_1px_var(--color-line)] focus-within:shadow-[inset_0_0_0_2px_var(--color-brand)]">
+        <Icon n="search" s={17} />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search 23 languages"
+          aria-label="Search languages"
+          className="min-w-0 flex-1 bg-transparent text-16 text-ink outline-none placeholder:text-ink-3"
+        />
+      </label>
+
       <div
         role="group"
         aria-label="Recording languages"
-        className="mt-5 grid grid-cols-2 gap-2.5 px-6"
+        className="mt-3 flex flex-wrap gap-2 px-5"
       >
-        {keys.map((k, i) => {
+        {list.map((k) => {
           const on = picked.includes(k)
-          const wide = i === keys.length - 1
           return (
             <button
               key={k}
               role="checkbox"
               aria-checked={on}
               onClick={() => toggle(k, on)}
-              className={`relative flex overflow-hidden rounded-lg p-4 text-left transition-[background-color,color,scale,box-shadow] duration-200 ease-(--ease-spring) active:scale-[0.97] ${
-                wide
-                  ? "col-span-2 h-[64px] flex-row-reverse items-center justify-end gap-3"
-                  : "h-[112px] flex-col justify-between"
-              } ${
+              className={`flex h-11 items-center gap-2 rounded-full pr-3.5 pl-3 transition-[background-color,color,box-shadow] duration-200 active:scale-[0.97] ${
                 on
-                  ? "bg-cobalt text-white shadow-cobalt"
-                  : "bg-surface shadow-card"
+                  ? "bg-ink text-white"
+                  : "bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-line)]"
               }`}
             >
+              {on ? (
+                <Icon n="check" s={15} stroke={2.4} />
+              ) : (
+                OPEN.has(k) && (
+                  <span
+                    aria-hidden
+                    className="h-1.5 w-1.5 rounded-full bg-brand"
+                  />
+                )
+              )}
               <span
-                className={`text-12 font-semibold ${
-                  on ? "text-white/75" : "text-ink-3"
-                }`}
+                lang={k}
+                dir="auto"
+                className="text-16 leading-none font-medium"
               >
-                {LANGS[k].name}
-              </span>
-              <span lang={k} className="text-30 leading-none font-bold">
                 {LANGS[k].native}
               </span>
-              <span
-                className={`absolute right-3.5 grid h-6 w-6 place-items-center rounded-full transition-colors ${
-                  wide ? "top-1/2 -translate-y-1/2" : "top-3.5"
-                } ${
-                  on
-                    ? "bg-white text-cobalt"
-                    : "shadow-[inset_0_0_0_1.5px_var(--color-line-2)]"
-                }`}
-              >
-                {on && <Icon n="check" s={14} stroke={2.4} />}
-              </span>
+              {k !== "en" && (
+                <span
+                  className={`text-12 ${on ? "text-white/60" : "text-ink-3"}`}
+                >
+                  {LANGS[k].name}
+                </span>
+              )}
             </button>
           )
         })}
+        {list.length === 0 && (
+          <p className="py-2 text-14 text-ink-2">No language matches “{q}”.</p>
+        )}
       </div>
-      <p className="mt-4 px-6 text-center text-12 text-ink-3">
-        You can add or remove languages later in your profile.
+      <p className="mt-4 flex items-center gap-2 px-5 text-12 text-ink-3">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" /> Scenes open now.
+        For the rest, Bolo tells you when labs need them.
       </p>
-      <div className="sticky bottom-0 mt-auto bg-linear-to-t from-canvas via-canvas to-canvas/0 px-6 pt-6 pb-8">
+
+      <div className="sticky bottom-0 mt-auto bg-linear-to-t from-canvas via-canvas to-canvas/0 px-5 pt-6 pb-8">
+        {noneOpen && (
+          <p className="mb-2 text-center text-12 text-wait-ink">
+            No open scenes in {picked.map((l) => LANGS[l].name).join(", ")} yet.
+            You can still join.
+          </p>
+        )}
         <Btn
           full
           size="lg"
@@ -724,7 +702,7 @@ export function Language() {
   )
 }
 
-/* ---------- Consent: no mascot, just the deal ---------- */
+/* ---------- Consent: just the deal, in plain words ---------- */
 
 const DEAL: {
   icon: string
@@ -734,25 +712,25 @@ const DEAL: {
 }[] = [
   {
     icon: "mic",
-    tile: "bg-cobalt text-white",
-    title: "We only record inside a mission",
+    tile: "bg-brand-soft text-brand-deep",
+    title: "We only record inside a scene",
     body: "Your phone asks for microphone access the first time you start one. Nothing listens in the background.",
   },
   {
     icon: "users",
-    tile: "bg-ink text-white",
+    tile: "bg-brand-soft text-brand-deep",
     title: "Reviewers and AI labs hear it",
     body: "Our team checks each take, then it is licensed to companies building speech AI. Never with your name or number.",
   },
   {
     icon: "shield",
-    tile: "bg-ink text-white",
+    tile: "bg-brand-soft text-brand-deep",
     title: "Delete it whenever you want",
     body: "Ask us to erase your voice data under the DPDP Act 2023. Money already paid stays yours.",
   },
   {
     icon: "wallet",
-    tile: "bg-lime text-ink",
+    tile: "bg-brand-soft text-brand-deep",
     title: "Paid for every accepted take",
     body: "The guaranteed price is locked before you record. Joining is free, with no fees, ever.",
   },
@@ -764,30 +742,28 @@ export function Consent({ inApp }: { inApp?: boolean }) {
   const [full, setFull] = useState(false)
   const [done, setDone] = useState(false)
   const picked = s.langs ?? [s.lang]
-  const [termsLang, setTermsLang] = useState<Lang>(picked[0])
+  const [termsLang, setTermsLang] = useState<Lang>(
+    picked.find((l) => CONSENT_COPY[l]) ?? "en",
+  )
   if (done) return <Ready onDone={a.acceptConsent} />
-  const c = CONSENT_COPY[termsLang]
+  const c = CONSENT_COPY[termsLang] ?? CONSENT_COPY.en!
   const body = (
     <>
-      <div className="px-6 pt-3">
-        <Tag tone="cobalt" icon="shield">
+      <div className="px-5 pt-3">
+        <Tag tone="brand" icon="shield">
           Your voice, your call
         </Tag>
-        <h1 className="semi mt-3 text-38 font-bold tracking-[-0.03em]">
-          Four promises <span className="text-cobalt">before you record.</span>
+        <h1 className="semi mt-3 text-24 font-semibold">
+          Four promises before you record
         </h1>
-        <p className="mt-2 text-16 leading-snug text-ink-2">
+        <p className="mt-1.5 text-14 leading-snug text-ink-2">
           The whole deal in plain words. It takes 30 seconds to read.
         </p>
       </div>
 
-      <ol className="mx-6 mt-6 flex flex-col">
+      <ol className="mx-5 mt-5 flex flex-col">
         {DEAL.map((d, i) => (
-          <li
-            key={d.title}
-            className="rise relative flex gap-4 pb-5"
-            style={{ animationDelay: `${i * 70}ms` }}
-          >
+          <li key={d.title} className="relative flex gap-4 pb-4">
             {i < DEAL.length - 1 && (
               <span
                 aria-hidden
@@ -795,13 +771,13 @@ export function Consent({ inApp }: { inApp?: boolean }) {
               />
             )}
             <span
-              className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-md ${d.tile}`}
+              className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-md ${d.tile}`}
             >
-              <Icon n={d.icon} s={20} />
+              <Icon n={d.icon} s={18} />
             </span>
             <div className="pt-0.5">
-              <h2 className="text-16 leading-tight font-bold">{d.title}</h2>
-              <p className="mt-1 text-14 leading-snug text-pretty text-ink-2">
+              <h2 className="text-16 leading-tight font-medium">{d.title}</h2>
+              <p className="mt-0.5 text-14 leading-snug text-pretty text-ink-2">
                 {d.body}
               </p>
             </div>
@@ -809,13 +785,13 @@ export function Consent({ inApp }: { inApp?: boolean }) {
         ))}
       </ol>
 
-      <div className="mx-6 overflow-hidden rounded-lg bg-surface shadow-card">
+      <div className="mx-5 border-y border-line">
         <button
           aria-expanded={full}
           onClick={() => setFull(!full)}
-          className="flex w-full items-center justify-between px-4 py-3.5 text-left"
+          className="flex w-full items-center justify-between py-3.5 text-left"
         >
-          <span className="text-16 font-semibold">Read the full terms</span>
+          <span className="text-14 font-medium">Read the full terms</span>
           <Icon
             n="chev"
             s={18}
@@ -825,29 +801,31 @@ export function Consent({ inApp }: { inApp?: boolean }) {
           />
         </button>
         {full && (
-          <div className="rise border-t border-line px-4 pt-3 pb-4">
-            {picked.length > 1 && (
+          <div className="border-t border-line pt-3 pb-4">
+            {picked.filter((l) => CONSENT_COPY[l]).length > 1 && (
               <div className="mb-3 flex flex-wrap gap-1.5">
-                {picked.map((l) => (
-                  <button
-                    key={l}
-                    lang={l}
-                    onClick={() => setTermsLang(l)}
-                    className={`h-8 rounded-full px-3 text-14 font-semibold transition-colors ${
-                      termsLang === l
-                        ? "bg-ink text-white"
-                        : "bg-surface-3 text-ink-2"
-                    }`}
-                  >
-                    {LANGS[l].native}
-                  </button>
-                ))}
+                {picked
+                  .filter((l) => CONSENT_COPY[l])
+                  .map((l) => (
+                    <button
+                      key={l}
+                      lang={l}
+                      onClick={() => setTermsLang(l)}
+                      className={`h-8 rounded-full px-3 text-14 font-medium transition-colors ${
+                        termsLang === l
+                          ? "bg-ink text-white"
+                          : "bg-surface-3 text-ink-2"
+                      }`}
+                    >
+                      {LANGS[l].native}
+                    </button>
+                  ))}
               </div>
             )}
             <dl lang={termsLang} className="script flex flex-col gap-3">
               {c.points.map(([h, t]) => (
                 <div key={h}>
-                  <dt className="text-16 font-semibold">{h}</dt>
+                  <dt className="text-14 font-medium">{h}</dt>
                   <dd className="mt-0.5 text-14 text-ink-2">{t}</dd>
                 </div>
               ))}
@@ -856,11 +834,11 @@ export function Consent({ inApp }: { inApp?: boolean }) {
         )}
       </div>
 
-      <div className="sticky bottom-0 mt-auto bg-linear-to-t from-canvas via-canvas to-canvas/0 px-6 pt-8 pb-8">
+      <div className="sticky bottom-0 mt-auto bg-linear-to-t from-canvas via-canvas to-canvas/0 px-5 pt-8 pb-8">
         <label
           className={`mb-3 flex cursor-pointer items-center gap-3 rounded-md p-3.5 transition-[background-color,box-shadow] duration-200 ${
             adult
-              ? "bg-cobalt-soft shadow-[inset_0_0_0_1.5px_var(--color-cobalt)]"
+              ? "bg-brand-soft shadow-[inset_0_0_0_1.5px_var(--color-brand)]"
               : "bg-surface shadow-[inset_0_0_0_1.5px_var(--color-line-2)]"
           }`}
         >
@@ -868,7 +846,7 @@ export function Consent({ inApp }: { inApp?: boolean }) {
             type="checkbox"
             checked={adult}
             onChange={(e) => setAdult(e.target.checked)}
-            className="h-5 w-5 shrink-0 accent-[#2b3bff]"
+            className="h-5 w-5 shrink-0 accent-[#F5640F]"
           />
           <span className="text-14 leading-snug">
             <span className="font-semibold">I'm 18 or older</span> and I agree
@@ -901,50 +879,43 @@ export function Consent({ inApp }: { inApp?: boolean }) {
   )
 }
 
-/* ---------- Ready + the archived microphone screen ---------- */
+/* ---------- Ready: the same warm surface as the intro, Bolo celebrating ---------- */
 
 function Ready({ onDone }: { onDone: () => void }) {
   const { s } = useStore()
+  useTone("light")
   const open = sel.openForMe(s)
   const first = open.length ? Math.min(...open.map((j) => j.minutes)) : null
   return (
-    <div className="flex flex-1 flex-col">
-      <Plate tone="cobalt" className="h-[400px]">
-        <div className="relative grid h-[346px] place-items-center">
-          {[268, 200, 136].map((d) => (
-            <span
-              key={d}
-              aria-hidden
-              className="absolute rounded-full bg-white/[.07]"
-              style={{ width: d, height: d }}
-            />
-          ))}
-          <Bolo
-            mood="happy"
-            tone="white"
-            size={140}
-            ground="none"
-            label="Bolo, happy"
-          />
-        </div>
-      </Plate>
-      <div className="rise flex flex-1 flex-col px-6 pt-7 pb-8 text-center">
-        <h1 className="semi text-38 font-bold tracking-[-0.03em]">
-          You're ready
-        </h1>
-        <p className="mx-auto mt-3 max-w-[30ch] text-16 leading-snug text-ink-2">
+    <div className="grad-dawn relative flex flex-1 flex-col overflow-hidden text-white">
+      <div className="relative flex flex-1 items-end justify-center pt-[98px]">
+        <span
+          aria-hidden
+          className="halo absolute top-[58%] left-1/2 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2"
+        />
+        <Bolo
+          mood="cheer"
+          tone="white"
+          size={190}
+          ground="none"
+          label="Bolo, cheering"
+        />
+      </div>
+      <div className="rise px-5 pt-6 pb-8 text-center">
+        <h1 className="semi text-30 font-semibold">You're ready</h1>
+        <p className="mx-auto mt-2 max-w-[32ch] text-16 leading-snug text-white/85">
           Your first ₹100 unlocks withdrawals.
-          {first ? ` The shortest mission takes about ${first} minutes.` : ""}
+          {first ? ` The shortest scene takes about ${first} minutes.` : ""}
         </p>
         {open.length > 0 && (
-          <div className="tnum mx-auto mt-5 flex items-center gap-2 rounded-full bg-surface px-4 py-2 text-14 font-semibold shadow-card">
-            <span className="h-2 w-2 rounded-full bg-cobalt" /> {open.length}{" "}
-            missions open in <span lang={s.lang}>{LANGS[s.lang].native}</span>
-          </div>
+          <span className="tnum mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-14 font-medium">
+            <span className="h-2 w-2 rounded-full bg-white" /> {open.length}{" "}
+            scenes open in <span lang={s.lang}>{LANGS[s.lang].native}</span>
+          </span>
         )}
-        <div className="mt-auto pt-8">
-          <Btn full size="lg" v="voice" iconRight="arrow" onClick={onDone}>
-            Find my first mission
+        <div className="mt-8">
+          <Btn full size="lg" v="white" iconRight="arrow" onClick={onDone}>
+            Find my first scene
           </Btn>
         </div>
       </div>
@@ -952,8 +923,9 @@ function Ready({ onDone }: { onDone: () => void }) {
   )
 }
 
-/** Archived: not in the onboarding flow, since the OS permission prompt covers it. Kept for the in-app denied-mic path.
-    Allowing here is simulated; the real microphone is only ever opened inside the studio. */
+/** Not in the onboarding flow, since the OS permission prompt covers it. Kept for the in-app denied-mic path.
+    Allowing here is simulated; the real microphone is only ever opened inside the studio. Calm by design:
+    no flashing rings, just Bolo and the steps. */
 export function MicPrime({ inApp }: { inApp?: boolean }) {
   const { s, a } = useStore()
   const [ready, setReady] = useState(false)
@@ -962,81 +934,74 @@ export function MicPrime({ inApp }: { inApp?: boolean }) {
   const allow = () => (inApp ? a.setMic("granted") : setReady(true))
   return (
     <div className="flex flex-1 flex-col">
-      <Plate tone="studio" className="h-[436px]">
-        <div className="flex h-12 items-center px-2">
-          {inApp ? (
-            <IconBtn n="back" label="Back" dark onClick={a.pop} />
-          ) : (
-            <div aria-hidden className="flex flex-1 gap-1.5 px-4">
-              {[1, 2, 3].map((i) => (
-                <span key={i} className="h-1 flex-1 rounded-full bg-white/80" />
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="grid h-[330px] place-items-center">
-          <BoloStage state={denied ? "retry" : "listening"} size={300} />
-        </div>
-      </Plate>
+      <div className="flex items-center px-2 pt-[54px] pb-1">
+        {inApp ? (
+          <IconBtn n="back" label="Back" onClick={a.pop} />
+        ) : (
+          <span className="h-11" />
+        )}
+      </div>
       <div
         key={String(denied)}
-        className="rise flex flex-1 flex-col px-6 pt-7 pb-8"
+        className="rise flex flex-1 flex-col px-5 pt-4 pb-8"
       >
-        {denied ? (
-          <>
-            <h1 className="semi text-30 font-bold tracking-[-0.025em]">
-              Microphone is blocked
-            </h1>
-            <p className="mt-2 text-16 leading-snug text-ink-2">
-              Your consent is saved. You can browse missions and your wallet,
-              but recording needs the microphone.
-            </p>
-            <ol className="mt-5 flex flex-col gap-2 text-16">
-              {[
-                "Open Settings → Apps → Feul",
-                "Tap Permissions → Microphone",
-                "Choose “Allow only while using the app”",
-              ].map((t, i) => (
-                <li key={t} className="flex items-center gap-3">
-                  <span className="tnum grid h-6 w-6 shrink-0 place-items-center rounded-full bg-orange-soft text-12 font-bold text-orange-ink">
-                    {i + 1}
-                  </span>
-                  {t}
-                </li>
-              ))}
-            </ol>
-            <div className="mt-auto flex flex-col gap-1.5 pt-8">
-              <Btn full size="lg" v="voice" icon="mic" onClick={allow}>
-                I've allowed it, try again
-              </Btn>
-              <Btn
-                full
-                v="ghost"
-                onClick={() => (inApp ? a.pop() : a.stage("done"))}
-              >
-                Browse missions for now
-              </Btn>
-            </div>
-          </>
-        ) : (
-          <>
-            <h1 className="semi text-30 font-bold tracking-[-0.025em]">
-              Allow the microphone to record missions
-            </h1>
-            <p className="mt-2 text-16 leading-snug text-ink-2">
-              Feul only listens while you record inside a mission. Hold the
-              phone close, like a normal call.
-            </p>
-            <div className="mt-auto flex flex-col gap-1.5 pt-8">
-              <Btn full size="lg" v="voice" icon="mic" onClick={allow}>
-                Allow microphone
-              </Btn>
-              <Btn full v="ghost" onClick={() => a.setMic("denied")}>
-                Not now
-              </Btn>
-            </div>
-          </>
+        <div className="flex flex-col items-center text-center">
+          <div className="relative grid h-[168px] w-[168px] place-items-center rounded-full bg-brand-soft">
+            <Bolo
+              mood={denied ? "concern" : "listen"}
+              size={132}
+              ground="none"
+              outfit={["headphones"]}
+            />
+            <span
+              className={`absolute right-2 bottom-3 grid h-11 w-11 place-items-center rounded-full ring-4 ring-canvas ${
+                denied ? "bg-wait text-white" : "bg-ink text-white"
+              }`}
+            >
+              <Icon n={denied ? "lock" : "mic"} s={20} />
+            </span>
+          </div>
+          <h1 className="semi mt-6 text-24 font-semibold">
+            {denied
+              ? "Your microphone is blocked"
+              : "Allow the microphone to record"}
+          </h1>
+          <p className="mt-2 max-w-[32ch] text-16 leading-snug text-ink-2">
+            {denied
+              ? "Your consent is saved. You can browse scenes and your wallet, but recording needs the microphone."
+              : "Feul only listens while you record inside a scene. Hold the phone close, like a normal call."}
+          </p>
+        </div>
+        {denied && (
+          <ol className="mt-6 divide-y divide-line border-y border-line">
+            {[
+              "Open Settings, then Apps, then Feul",
+              "Tap Permissions, then Microphone",
+              "Choose “Allow only while using the app”",
+            ].map((t, i) => (
+              <li key={t} className="flex items-center gap-3 py-3 text-16">
+                <span className="tnum grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface-3 text-12 font-semibold">
+                  {i + 1}
+                </span>
+                {t}
+              </li>
+            ))}
+          </ol>
         )}
+        <div className="mt-auto flex flex-col gap-2 pt-8">
+          <Btn full size="lg" v="voice" icon="mic" onClick={allow}>
+            {denied ? "I've allowed it, try again" : "Allow microphone"}
+          </Btn>
+          <Btn
+            full
+            v="ghost"
+            onClick={() =>
+              denied ? (inApp ? a.pop() : a.stage("done")) : a.setMic("denied")
+            }
+          >
+            {denied ? "Browse scenes for now" : "Not now"}
+          </Btn>
+        </div>
       </div>
     </div>
   )

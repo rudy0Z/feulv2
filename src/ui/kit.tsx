@@ -52,7 +52,7 @@ export function useTone(ink: Tone["ink"], bg: Tone["bg"] = "canvas") {
 /** The three-bar crown: FEUL's mark and Bolo's head, at glyph size. */
 export function Mark({
   s = 18,
-  color = "#2B3BFF",
+  color = "#F5640F",
   className = "",
 }: {
   s?: number
@@ -80,7 +80,7 @@ const P: Record<string, ReactNode> = {
     <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Zm4 4a2 2 0 0 0 4 0" />
   ),
   home: <path d="M4 11 12 4l8 7v9h-5v-6H9v6H4v-9Z" />,
-  missions: (
+  scenes: (
     <>
       <circle cx="12" cy="12" r="8.5" />
       <circle cx="12" cy="12" r="4.5" />
@@ -198,13 +198,13 @@ export function Icon({
 type BtnV = "voice" | "ink" | "money" | "outline" | "ghost" | "link" | "danger" | "white" | "glass"
 const BV: Record<BtnV, string> = {
   voice:
-    "bg-cobalt text-white shadow-cobalt hover:bg-cobalt-hi active:bg-cobalt-deep",
+    "bg-brand text-white shadow-brand hover:bg-brand-hi active:bg-brand-deep",
   ink: "bg-ink text-white hover:bg-ink/88",
-  money: "bg-lime text-ink shadow-lime hover:brightness-[1.04]",
+  money: "bg-money-ink text-white shadow-money hover:bg-money-ink/92",
   outline:
     "bg-surface text-ink shadow-[inset_0_0_0_1.5px_var(--color-line-2)] hover:bg-surface-2",
   ghost: "text-ink hover:bg-ink/5",
-  link: "text-cobalt hover:bg-cobalt-soft",
+  link: "text-brand hover:bg-brand-soft",
   danger: "bg-red text-white hover:brightness-110",
   white: "bg-white text-ink hover:bg-white/92",
   glass: "bg-white/12 text-white hover:bg-white/18",
@@ -221,6 +221,8 @@ export function Btn({
   iconRight,
   className = "",
   type = "button",
+  describedBy,
+  /** id of visible text explaining the button, e.g. why it's disabled */
 }: {
   v?: BtnV
   children: ReactNode
@@ -233,6 +235,7 @@ export function Btn({
   iconRight?: string
   className?: string
   type?: "button" | "submit"
+  describedBy?: string
 }) {
   const sz =
     size === "lg"
@@ -245,7 +248,12 @@ export function Btn({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-[background-color,color,box-shadow,scale,opacity,filter] duration-200 ease-(--ease-spring) active:not-disabled:scale-[0.96] disabled:opacity-35 disabled:shadow-none ${sz} ${BV[v]} ${
+      aria-describedby={describedBy}
+      className={`inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-[background-color,color,box-shadow,scale,opacity,filter] duration-200 ease-(--ease-spring) active:not-disabled:scale-[0.96] ${
+        loading
+          ? "disabled:opacity-70"
+          : "disabled:bg-surface-3 disabled:text-ink-3"
+      } disabled:shadow-none ${sz} ${BV[v]} ${
         full ? "w-full" : ""
       } ${className}`}
     >
@@ -286,28 +294,23 @@ export function IconBtn({
         dark ? "text-studio-ink hover:bg-white/10" : "text-ink hover:bg-ink/6"
       } ${className}`}
     >
-      <span className={badge ? "bell-ring" : ""}>
-        <Icon n={n} s={s} />
-      </span>
+      <Icon n={n} s={s} />
       {badge && (
-        <span className="absolute top-2.5 right-2.5 grid h-2.5 w-2.5 place-items-center">
-          <span className="ping-soft absolute inset-0 rounded-full bg-orange" />
-          <span className="relative h-2.5 w-2.5 rounded-full bg-orange ring-2 ring-canvas" />
-        </span>
+        <span className="absolute top-2.5 right-2.5 h-2.5 w-2.5 rounded-full bg-brand ring-2 ring-canvas" />
       )}
     </button>
   )
 }
 
 /* ---------- Tags & status (one vocabulary everywhere) ---------- */
-export type TagTone = "neutral" | "cobalt" | "lime" | "limeSolid" | "orange" | "orangeSolid" | "red" | "ink" | "studio" | "white"
+export type TagTone = "neutral" | "brand" | "money" | "moneySolid" | "wait" | "waitSolid" | "red" | "ink" | "studio" | "white"
 const TT: Record<TagTone, string> = {
   neutral: "bg-surface-3 text-ink-2",
-  cobalt: "bg-cobalt-soft text-cobalt-deep",
-  lime: "bg-lime-soft text-lime-ink",
-  limeSolid: "bg-lime text-ink",
-  orange: "bg-orange-soft text-orange-ink",
-  orangeSolid: "bg-orange text-white",
+  brand: "bg-brand-soft text-brand-deep",
+  money: "bg-money-soft text-money-ink",
+  moneySolid: "bg-money text-ink",
+  wait: "bg-wait-soft text-wait-ink",
+  waitSolid: "bg-wait text-white",
   red: "bg-red-soft text-red",
   ink: "bg-ink text-white",
   studio: "bg-white/10 text-studio-ink",
@@ -333,12 +336,11 @@ export function Tag({
       className={`inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2.5 text-12 font-semibold whitespace-nowrap ${TT[tone]} ${className}`}
     >
       {dot && (
-        <span className="relative grid h-1.5 w-1.5 place-items-center">
-          {live && (
-            <span className="ping-soft absolute inset-0 rounded-full bg-current" />
-          )}
-          <span className="relative h-1.5 w-1.5 rounded-full bg-current" />
-        </span>
+        <span
+          className={`h-1.5 w-1.5 rounded-full bg-current ${
+            live ? "pulse-dot" : ""
+          }`}
+        />
       )}
       {icon && <Icon n={icon} s={13} stroke={2} />}
       {children}
@@ -347,27 +349,27 @@ export function Tag({
 }
 export const STATUS: Record<string, [string, TagTone]> = {
   ready: ["Ready", "neutral"],
-  recording: ["Recording", "cobalt"],
+  recording: ["Recording", "brand"],
   recorded_local: ["On this phone", "neutral"],
-  uploading: ["Uploading", "cobalt"],
-  upload_failed: ["Not uploaded", "orange"],
+  uploading: ["Uploading", "brand"],
+  upload_failed: ["Not uploaded", "wait"],
   submitted: ["Received", "neutral"],
-  under_review: ["With reviewers", "orange"],
-  accepted: ["Accepted", "lime"],
-  repair_required: ["Needs a retake", "orangeSolid"],
-  repaired: ["Retake sent", "orange"],
-  approved: ["Approved", "lime"],
-  appeal: ["Under appeal", "orange"],
-  pending: ["Pending review", "orange"],
-  settled: ["Settled", "lime"],
+  under_review: ["With reviewers", "wait"],
+  accepted: ["Accepted", "money"],
+  repair_required: ["Needs a retake", "waitSolid"],
+  repaired: ["Retake sent", "wait"],
+  approved: ["Approved", "money"],
+  appeal: ["Under appeal", "wait"],
+  pending: ["Pending review", "wait"],
+  settled: ["Settled", "money"],
   failed: ["Failed", "red"],
-  processing: ["Processing", "orange"],
-  honoured: ["Paid · campaign closed", "lime"],
+  processing: ["Processing", "wait"],
+  honoured: ["Paid · campaign closed", "money"],
   deleted_after_revocation: ["Data deleted · paid", "neutral"],
-  requested: ["Requested", "orange"],
-  delayed: ["Delayed", "orange"],
-  paid: ["Paid", "lime"],
-  hold: ["On hold", "orange"],
+  requested: ["Requested", "wait"],
+  delayed: ["Delayed", "wait"],
+  paid: ["Paid", "money"],
+  hold: ["On hold", "wait"],
 }
 export function Status({
   k,
@@ -439,7 +441,7 @@ export function Wordmark({ dark, s = 1 }: WordmarkProps) {
       }`}
       style={{ zoom: s }}
     >
-      <Mark s={19} color={dark ? "#FFFFFF" : "#2B3BFF"} className="mb-[3px]" />
+      <Mark s={19} color={dark ? "#FFFFFF" : "#F5640F"} className="mb-[3px]" />
       <span className="semi text-24 leading-none font-bold tracking-[-0.03em]">
         feul
       </span>
@@ -448,12 +450,62 @@ export function Wordmark({ dark, s = 1 }: WordmarkProps) {
 }
 
 /* ---------- Bars ---------- */
+/** Level progress as a ring around the avatar: the same mark in the top bar and on Profile. */
+export function LevelRing({
+  pct,
+  size = 26,
+  stroke = 3,
+  dark,
+  children,
+}: {
+  pct: number
+  size?: number
+  stroke?: number
+  dark?: boolean
+  children?: ReactNode
+}) {
+  const r = (size - stroke) / 2
+  const c = 2 * Math.PI * r
+  return (
+    <span
+      className="relative grid shrink-0 place-items-center"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        width={size}
+        height={size}
+        className="absolute inset-0 -rotate-90"
+        aria-hidden
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={dark ? "rgba(255,255,255,.16)" : "var(--color-line-2)"}
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--color-brand)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${Math.max(0.02, pct) * c} ${c}`}
+          style={{ transition: "stroke-dasharray 900ms var(--ease-out)" }}
+        />
+      </svg>
+      {children && <span className="relative">{children}</span>}
+    </span>
+  )
+}
+
 export function TopBar() {
   const { s, a } = useStore()
   const unread = s.notices.some((n) => n.unread)
-  const tier = sel.tier(s)
-  const earned = s.ledger.filter((l) => l.kind === "earning").length
-  const prog = Math.min(1, tier >= 3 ? 1 : earned / (tier === 1 ? 3 : 8))
+  const lv = sel.level(s)
   return (
     <header className="glass-light sticky top-0 z-20 flex items-center justify-between px-5 pt-[54px] pb-2">
       <Wordmark />
@@ -465,43 +517,15 @@ export function TopBar() {
           onClick={() => a.openSheet("notifications")}
         />
         <button
-          aria-label={`Profile · level ${tier}`}
+          aria-label={`Profile · Level ${lv.tier}, ${lv.cur.name}`}
           onClick={() => a.push({ name: "profile" })}
-          className="relative ml-0.5 grid h-11 w-11 place-items-center rounded-full transition-transform duration-200 ease-(--ease-spring) active:scale-90"
+          className="grid h-11 w-11 place-items-center rounded-full transition-transform duration-200 active:scale-90"
         >
-          <svg
-            width="44"
-            height="44"
-            viewBox="0 0 44 44"
-            className="absolute inset-0 -rotate-90"
-            aria-hidden
-          >
-            <circle
-              cx="22"
-              cy="22"
-              r="20"
-              fill="none"
-              stroke="var(--color-line-2)"
-              strokeWidth="2.5"
-            />
-            <circle
-              cx="22"
-              cy="22"
-              r="20"
-              fill="none"
-              stroke="var(--color-cobalt)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeDasharray={`${prog * 125.7} 200`}
-              style={{ transition: "stroke-dasharray 900ms var(--ease-out)" }}
-            />
-          </svg>
-          <span className="grid h-[34px] w-[34px] place-items-center rounded-full bg-ink text-14 font-semibold text-white">
-            {s.name[0]}
-          </span>
-          <span className="tnum absolute -right-0.5 -bottom-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-cobalt px-1 text-11 font-bold text-white ring-2 ring-canvas">
-            {tier}
-          </span>
+          <LevelRing pct={lv.pct} size={40} stroke={2.5}>
+            <span className="grid h-[31px] w-[31px] place-items-center rounded-full bg-ink text-14 font-semibold text-white">
+              {s.name[0]}
+            </span>
+          </LevelRing>
         </button>
       </div>
     </header>
@@ -545,19 +569,14 @@ export function BackBar({
   )
 }
 
-/* Three floating discs, no bar. Icon-only, with the cobalt disc sliding to the active tab.
-   Bolo deliberately does not live here: the nav also sits over Missions and Wallet, where Bolo stays out of the way. */
+/* A floating, labelled tab bar. The active tab is an ink pill; brand colour stays reserved for voice. */
 export function BottomNav() {
   const { s, a } = useStore()
   const items = [
     ["home", "Home", "home"],
-    ["jobs", "Missions", "missions"],
+    ["jobs", "Scenes", "scenes"],
     ["wallet", "Wallet", "wallet"],
   ] as const
-  const idx = Math.max(
-    0,
-    items.findIndex(([k]) => k === s.tab),
-  )
   return (
     <motion.nav
       initial={{ y: 130 }}
@@ -565,33 +584,22 @@ export function BottomNav() {
       exit={{ y: 130 }}
       transition={SPRING}
       aria-label="Main"
-      className="pointer-events-none absolute inset-x-0 bottom-7 z-30 flex justify-center"
+      className="pointer-events-none absolute inset-x-0 bottom-6 z-30 flex justify-center"
     >
-      <div className="pointer-events-auto relative flex items-center gap-1 rounded-full bg-white/85 p-1.5 shadow-float backdrop-blur-xl">
-        <span
-          aria-hidden
-          className="absolute top-1.5 left-1.5 h-14 w-14 rounded-full bg-cobalt shadow-cobalt transition-transform duration-500 ease-(--ease-spring) motion-reduce:transition-none"
-          style={{ transform: `translateX(${idx * 60}px)` }}
-        />
+      <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-white/90 p-1.5 shadow-float backdrop-blur-xl">
         {items.map(([k, l, ic]) => {
           const on = s.tab === k
           return (
             <button
               key={k}
               onClick={() => (a.setTab(k), buzz(6))}
-              aria-label={l}
               aria-current={on ? "page" : undefined}
-              className={`relative grid h-14 w-14 place-items-center rounded-full transition-colors duration-300 active:scale-90 ${
-                on ? "text-white" : "text-ink-2 hover:text-ink"
+              className={`flex h-12 w-[92px] items-center justify-center gap-1.5 rounded-full text-14 font-medium transition-colors duration-200 ${
+                on ? "bg-ink text-white" : "text-ink-2 hover:text-ink"
               }`}
             >
-              <span
-                className={`transition-transform duration-500 ease-(--ease-spring) ${
-                  on ? "scale-110" : "scale-100"
-                }`}
-              >
-                <Icon n={ic} s={22} />
-              </span>
+              <Icon n={ic} s={19} />
+              {l}
             </button>
           )
         })}
@@ -674,13 +682,13 @@ const rnd = (seed: number) => {
     return x / 233280
   }
 }
-type WTone = "cobalt" | "ink" | "muted" | "light" | "lime" | "orange"
+type WTone = "brand" | "ink" | "muted" | "light" | "money" | "wait"
 export function Waveform({
   seed = 1,
   bars = 48,
   h = 40,
   progress = 1,
-  tone = "cobalt",
+  tone = "brand",
   className = "",
 }: {
   seed?: number
@@ -698,15 +706,15 @@ export function Waveform({
     ),
   )
   const on = {
-    cobalt: "#2B3BFF",
-    ink: "#0E0F14",
-    muted: "#8B90A1",
+    brand: "#F5640F",
+    ink: "#1C1713",
+    muted: "#9B9188",
     light: "#FFFFFF",
-    lime: "#C6F432",
-    orange: "#FF5A1F",
+    money: "#18A06B",
+    wait: "#E39A12",
   }[tone]
   const off =
-    tone === "light" || tone === "lime" ? "rgba(255,255,255,.2)" : "#D5D8E1"
+    tone === "light" || tone === "money" ? "rgba(255,255,255,.2)" : "#E3D9CC"
   const w = 100 / bars
   return (
     <svg
@@ -764,7 +772,7 @@ export function Player({
         onClick={() => (setOn(!on), buzz(4))}
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition-[background-color,color,scale] duration-200 ease-(--ease-spring) active:scale-90 ${
           on
-            ? "bg-cobalt text-white"
+            ? "bg-brand text-white"
             : dark
               ? "bg-white text-ink"
               : "bg-surface text-ink shadow-[inset_0_0_0_1.5px_var(--color-line-2)]"
@@ -782,7 +790,7 @@ export function Player({
           bars={44}
           h={28}
           progress={on || p > 0 ? p : 0}
-          tone={dark ? "light" : "cobalt"}
+          tone={dark ? "light" : "brand"}
         />
       </div>
       <span
@@ -796,7 +804,7 @@ export function Player({
   )
 }
 
-/* ---------- Mission metadata ---------- */
+/* ---------- Scene metadata ---------- */
 export function SceneIcon({
   env,
   s = 32,
@@ -867,6 +875,26 @@ export function SceneIcon({
     </svg>
   )
 }
+/** Where a scene happens, as a quiet neutral tile. Bolo is a character, not list iconography. */
+export function SettingTile({
+  env,
+  size = 48,
+  className = "",
+}: {
+  env: Env
+  size?: number
+  className?: string
+}) {
+  return (
+    <span
+      aria-hidden
+      className={`grid shrink-0 place-items-center rounded-md bg-surface-3 text-ink-2 ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <SceneIcon env={env} s={Math.round(size * 0.54)} />
+    </span>
+  )
+}
 export const FORMAT_ICON = {
   LINES: "book",
   SCENARIO: "chat",
@@ -888,18 +916,18 @@ export function LengthTag({ l, dark }: LengthTagProps) {
 export function RareTag({ x }: { x: number }) {
   if (x < 1.3) return null
   return (
-    <Tag tone="cobalt" icon="spark">
+    <Tag tone="brand" icon="spark">
       <span className="tnum">{x.toFixed(1)}×</span> rare voice
     </Tag>
   )
 }
 
 /** Scannable: reward and time first, then what it is, then why it pays what it pays. */
-type MissionRowProps = {
+type SceneRowProps = {
   job: Job
   locked?: boolean
 }
-export function MissionRow({ job, locked }: MissionRowProps) {
+export function SceneRow({ job, locked }: SceneRowProps) {
   const { s, a } = useStore()
   const saved = s.saved.includes(job.id)
   const off = job.campaign !== "open" || locked
@@ -912,41 +940,22 @@ export function MissionRow({ job, locked }: MissionRowProps) {
         : job.campaign === "closed"
           ? "Closed to new work"
           : null
-  const l = lengthOf(job)
   return (
     <div
-      className={`group relative flex gap-3.5 rounded-lg bg-surface p-2.5 shadow-card transition-[scale,box-shadow] duration-300 ease-(--ease-spring) active:scale-[0.98] ${
-        off ? "opacity-65" : "hover:shadow-float"
+      className={`group relative flex items-start gap-3.5 py-3.5 transition-opacity ${
+        off ? "opacity-60" : ""
       }`}
     >
-      <div className="relative h-[92px] w-[84px] shrink-0 overflow-hidden rounded-md bg-surface-3">
-        <SceneIcon
-          env={job.env}
-          s={28}
-          className="absolute inset-0 m-auto text-ink-3"
-        />
-        <img
-          src={job.image}
-          alt=""
-          loading="lazy"
-          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-(--ease-out) group-hover:scale-105 ${
-            off ? "grayscale" : ""
-          }`}
-          onError={(e) => (e.currentTarget.style.display = "none")}
-        />
-        <span className="absolute bottom-1.5 left-1.5">
-          <LengthTag l={l} dark />
-        </span>
-      </div>
-      <div className="min-w-0 flex-1 py-0.5 pr-1">
+      <SettingTile env={job.env} className="mt-0.5" />
+      <div className="min-w-0 flex-1">
         <button
           onClick={() => a.push({ name: "detail", jobId: job.id })}
-          className="block w-full text-left after:absolute after:inset-0 after:rounded-lg"
+          className="block w-full text-left after:absolute after:inset-0"
           aria-label={`${job.title}, ${inr(jobTotal(job))} guaranteed, ${job.minutes} minutes`}
         >
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="truncate text-16 leading-tight font-semibold">
+              <div className="truncate text-16 leading-tight font-medium">
                 {job.title}
               </div>
               <div className="mt-1 flex items-center gap-1.5 text-12 text-ink-2">
@@ -960,21 +969,21 @@ export function MissionRow({ job, locked }: MissionRowProps) {
             </div>
             <div className="shrink-0 text-right">
               <div
-                className={`cond tnum text-24 leading-none font-bold ${
+                className={`cond tnum text-20 leading-none font-semibold ${
                   off ? "text-ink-3" : ""
                 }`}
               >
                 {inr(jobTotal(job))}
               </div>
               {job.bonus > 0 && (
-                <div className="tnum mt-1 text-11 font-semibold text-ink-3">
+                <div className="tnum mt-1 text-11 font-medium text-ink-3">
                   +{inr(job.bonus)} bonus
                 </div>
               )}
             </div>
           </div>
         </button>
-        <div className="mt-2.5 flex items-center gap-1.5">
+        <div className="mt-2 flex items-center gap-1.5">
           {status ? (
             <Tag tone="neutral" icon={locked ? "lock" : undefined}>
               {status}
@@ -988,10 +997,10 @@ export function MissionRow({ job, locked }: MissionRowProps) {
             </>
           )}
           <button
-            aria-label={saved ? "Remove from saved" : "Save mission"}
+            aria-label={saved ? "Remove from saved" : "Save scene"}
             onClick={() => (a.toggleSave(job.id), buzz(6))}
-            className={`relative z-10 -my-2 ml-auto grid h-9 w-9 place-items-center rounded-full transition-[scale,color] duration-300 ease-(--ease-spring) hover:bg-surface-2 active:scale-75 ${
-              saved ? "scale-110 text-cobalt" : "text-ink-3"
+            className={`relative z-10 -my-2 ml-auto grid h-8 w-8 place-items-center rounded-full transition-[scale,color] duration-200 hover:bg-surface-3 active:scale-90 ${
+              saved ? "scale-110 text-brand" : "text-ink-3"
             }`}
           >
             <svg
@@ -1048,7 +1057,7 @@ export function Section({
     <section className={`px-5 ${className}`}>
       <div className="mb-3.5 flex items-end justify-between gap-3">
         <div>
-          <h2 className="semi text-20 font-bold tracking-[-0.01em]">{title}</h2>
+          <h2 className="semi text-18 font-semibold">{title}</h2>
           {sub && <p className="mt-0.5 text-14 text-ink-2">{sub}</p>}
         </div>
         {action}
@@ -1080,20 +1089,20 @@ export function Notice({
   icon?: string
 }) {
   const c = {
-    attention: "bg-orange-soft",
-    info: "bg-cobalt-soft",
-    ok: "bg-lime-soft",
+    attention: "bg-wait-soft",
+    info: "bg-brand-soft",
+    ok: "bg-money-soft",
     neutral: "bg-surface-2 shadow-[inset_0_0_0_1px_var(--color-line)]",
     error: "bg-red-soft",
     studio: "bg-studio-3 text-studio-ink",
   }[tone]
   const ic = {
-    attention: "bg-orange text-white",
-    info: "bg-cobalt text-white",
-    ok: "bg-lime text-ink",
+    attention: "bg-wait text-white",
+    info: "bg-brand text-white",
+    ok: "bg-money text-ink",
     neutral: "bg-ink text-white",
     error: "bg-red text-white",
-    studio: "bg-orange text-white",
+    studio: "bg-wait text-white",
   }[tone]
   const name =
     icon ??
@@ -1106,7 +1115,7 @@ export function Notice({
       studio: "alert",
     }[tone]
   return (
-    <div className={`flex gap-3 rounded-lg p-4 ${c}`}>
+    <div className={`flex gap-3 rounded-md p-4 ${c}`}>
       <span
         className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${ic}`}
       >
@@ -1138,20 +1147,20 @@ export function Notice({
 export function Meter({
   value,
   max = 1,
-  tone = "cobalt",
+  tone = "brand",
   className = "",
   h = "h-2",
 }: {
   value: number
   max?: number
-  tone?: "cobalt" | "lime" | "orange" | "ink" | "white"
+  tone?: "brand" | "money" | "wait" | "ink" | "white"
   className?: string
   h?: string
 }) {
   const fill = {
-    cobalt: "bg-cobalt",
-    lime: "bg-lime",
-    orange: "bg-orange",
+    brand: "bg-brand",
+    money: "bg-money",
+    wait: "bg-wait",
     ink: "bg-ink",
     white: "bg-white",
   }[tone]
@@ -1169,7 +1178,7 @@ export function Meter({
   )
 }
 
-/** Where something is in its lifecycle. Done is ink, now is orange while it waits on someone else
+/** Where something is in its lifecycle. Done is ink, now is wait while it waits on someone else
     (or the given tone), next is hollow. One shape for reviews, payouts and data-rights requests. */
 export type Step = {
   title: string
@@ -1178,20 +1187,18 @@ export type Step = {
 }
 export function Timeline({
   steps,
-  now = "orange",
+  now = "wait",
   dark,
 }: {
   steps: Step[]
-  now?: "orange" | "cobalt" | "lime"
+  now?: "wait" | "brand" | "money"
   dark?: boolean
 }) {
-  const nowC = { orange: "bg-orange", cobalt: "bg-cobalt", lime: "bg-lime" }[
-    now
-  ]
+  const nowC = { wait: "bg-wait", brand: "bg-brand", money: "bg-money" }[now]
   const ringC = {
-    orange: "bg-orange/30",
-    cobalt: "bg-cobalt/30",
-    lime: "bg-lime/40",
+    wait: "bg-wait/30",
+    brand: "bg-brand/30",
+    money: "bg-money/40",
   }[now]
   return (
     <ol className="flex flex-col">
@@ -1286,7 +1293,7 @@ export function Toggle({
       disabled={disabled}
       onClick={() => (onChange(!on), buzz(4))}
       className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50 ${
-        on ? "bg-cobalt" : "bg-line-2"
+        on ? "bg-brand" : "bg-line-2"
       }`}
     >
       <span
@@ -1429,7 +1436,7 @@ export function SlideToConfirm({
       className="relative h-16 overflow-hidden rounded-full bg-white/10 p-1 shadow-[inset_0_0_0_1px_rgb(255_255_255/.08)]"
     >
       <motion.div
-        className="absolute inset-y-1 left-1 rounded-full bg-lime/22"
+        className="absolute inset-y-1 left-1 rounded-full bg-money/22"
         style={{ width: fill }}
       />
       <motion.span
@@ -1457,7 +1464,7 @@ export function SlideToConfirm({
           !done &&
           (e.preventDefault(), finish())
         }
-        className="relative z-10 grid h-14 w-14 cursor-grab touch-none place-items-center rounded-full bg-lime text-ink shadow-lime active:cursor-grabbing"
+        className="relative z-10 grid h-14 w-14 cursor-grab touch-none place-items-center rounded-full bg-money text-ink shadow-money active:cursor-grabbing"
       >
         {busy || done ? (
           <span className="h-5 w-5 animate-spin rounded-full border-2 border-ink border-t-transparent" />
