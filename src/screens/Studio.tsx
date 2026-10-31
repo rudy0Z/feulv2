@@ -1,83 +1,149 @@
-import { useEffect, useState } from 'react'
-import { FORMAT_LABEL, LANGS } from '../state/model'
-import { sel, useStore } from '../state/store'
-import { Banner, Btn, Dialog, Icon, IconBtn, Player, Waveform, inr, mmss, useTimer } from '../ui/kit'
+import { useEffect, useRef, useState } from "react"
+import {
+  AnimatePresence,
+  useMotionValueEvent,
+  type MotionValue,
+} from "motion/react"
+import { FORMAT_LABEL, LANGS, type Job, type Prompt } from "../state/model"
+import { sel, useStore } from "../state/store"
+import { BoloStage, Typed, useVoiceLevel, type BoloState } from "../ui/Bolo"
+import {
+  Btn,
+  Dialog,
+  Icon,
+  IconBtn,
+  Tag,
+  buzz,
+  inr,
+  mmss,
+  useTimer,
+  useTone,
+} from "../ui/kit"
 
 /* Leaving a session with local recordings: save for later or discard (with confirmation). */
-export function LeaveFlow({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function LeaveFlow({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
   const { s, a } = useStore()
   const [confirm, setConfirm] = useState(false)
-  if (!open || !s.session) return null
-  const n = s.session.clips.filter((c) => c.state !== 'ready').length
-  if (confirm)
-    return (
-      <Dialog
-        title={`Discard ${n} recorded ${n === 1 ? 'clip' : 'clips'}?`}
-        actions={
-          <>
-            <Btn v="danger" full onClick={a.discard}>
-              Discard permanently
-            </Btn>
-            <Btn v="text" full onClick={() => setConfirm(false)}>
-              Keep them
-            </Btn>
-          </>
-        }
-      >
-        These clips exist only on this phone and were never submitted. Discarding deletes them now and can't be undone. No payout is attached to them.
-      </Dialog>
-    )
+  const sess = s.session
+  const n = sess ? sess.clips.filter((c) => c.state !== "ready").length : 0
   return (
-    <Dialog
-      title="Leave the studio?"
-      actions={
-        <>
-          <Btn full onClick={() => (onClose(), a.leaveSession())}>
-            Save on device · resume within {s.session.resumeLeft}
-          </Btn>
-          <Btn v="outlined" full onClick={() => (n ? setConfirm(true) : a.discard())}>
-            Discard session
-          </Btn>
-          <Btn v="text" full onClick={onClose}>
-            Stay
-          </Btn>
-        </>
-      }
-    >
-      {n > 0 ? `${n} ${n === 1 ? 'clip is' : 'clips are'} recorded on this device but not submitted.` : 'Nothing recorded yet.'} Your payout of {inr(s.session.locked.total)} stays locked while you can resume.
-    </Dialog>
+    <AnimatePresence>
+      {open && sess && confirm && (
+        <Dialog
+          key="confirm"
+          title={`Discard ${n} recorded ${n === 1 ? "take" : "takes"}?`}
+          actions={
+            <>
+              <Btn v="danger" full onClick={a.discard}>
+                Discard permanently
+              </Btn>
+              <Btn v="ghost" full onClick={() => setConfirm(false)}>
+                Keep them
+              </Btn>
+            </>
+          }
+        >
+          These takes exist only on this phone and were never submitted.
+          Discarding deletes them now and can't be undone. No payout is attached
+          to them.
+        </Dialog>
+      )}
+      {open && sess && !confirm && (
+        <Dialog
+          key="leave"
+          title="Leave the studio?"
+          actions={
+            <>
+              <Btn full v="ink" onClick={() => (onClose(), a.leaveSession())}>
+                Save on this phone · resume within {sess.resumeLeft}
+              </Btn>
+              <Btn
+                v="outline"
+                full
+                onClick={() => (n ? setConfirm(true) : a.discard())}
+              >
+                Discard session
+              </Btn>
+              <Btn v="ghost" full onClick={onClose}>
+                Stay
+              </Btn>
+            </>
+          }
+        >
+          {n > 0
+            ? `${n} ${
+                n === 1 ? "take is" : "takes are"
+              } recorded on this phone but not submitted.`
+            : "Nothing recorded yet."}{" "}
+          Your <span className="tnum">{inr(sess.locked.total)}</span> stays
+          locked while you can resume.
+        </Dialog>
+      )}
+    </AnimatePresence>
   )
 }
 
 export default function Studio() {
   const { s } = useStore()
+  useTone("light", "studio")
   const sess = s.session
   const [leave, setLeave] = useState(false)
   if (!sess) return null
   const j = sel.job(s, sess.jobId)
-  const room = j.format === 'ROOM'
-  const done = sess.clips.filter((c) => c.state !== 'ready').length
+  const room = j.format === "ROOM"
+  const done = sess.clips.filter((c) => c.state !== "ready").length
   return (
-    <div className="relative flex flex-1 flex-col">
-      <header className="flex h-14 items-center gap-1 px-2">
-        <IconBtn n="close" label="Leave studio" onClick={() => setLeave(true)} />
+    <div className="relative flex flex-1 flex-col bg-studio text-studio-ink">
+      <header className="flex items-center gap-1 px-2 pt-[54px] pb-1">
+        <IconBtn
+          n="close"
+          label="Leave studio"
+          dark
+          onClick={() => setLeave(true)}
+        />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[15px] font-semibold">{sess.repairOf ? `Repair · ${j.title}` : j.title}</div>
-          <div className="text-[12px] text-ink-2">
-            {FORMAT_LABEL[j.format]} · {LANGS[j.lang].native} · {inr(sess.locked.total)} locked
+          <div className="truncate text-16 font-semibold">
+            {sess.repairOf ? `Retake · ${j.title}` : j.title}
+          </div>
+          <div className="tnum truncate text-12 text-studio-ink-2">
+            <span className="font-semibold text-studio-ink">
+              {inr(sess.locked.total)} locked
+            </span>{" "}
+            · {FORMAT_LABEL[j.format]} · {LANGS[j.lang].native}
           </div>
         </div>
-        <span className="num mr-3 inline-flex h-8 items-center rounded-full bg-surface px-3 text-[13px] font-semibold">
+        <MicSource />
+        <span
+          className="tnum mr-3 ml-1.5 inline-flex h-8 items-center rounded-full bg-white/8 px-3 text-12 font-semibold"
+          aria-label={`${done} of ${sess.clips.length} recorded`}
+        >
           {done}/{sess.clips.length}
         </span>
       </header>
-      <div className="flex gap-1.5 px-5">
+      <div className="flex gap-1 px-5 pt-1" aria-hidden>
         {sess.clips.map((c, i) => (
-          <span key={c.id} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${c.state !== 'ready' ? 'bg-ultra' : i === sess.index ? 'bg-peri' : 'bg-surface-variant'}`} />
+          <span
+            key={c.id}
+            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+              c.state !== "ready"
+                ? "bg-cobalt-hi"
+                : i === sess.index
+                  ? "bg-white"
+                  : "bg-white/12"
+            }`}
+          />
         ))}
       </div>
       {room ? (
-        <div className="flex flex-1 flex-col">{!sess.roomConsented ? <RoomConsent /> : <RoomCapture />}</div>
+        <div className="flex flex-1 flex-col">
+          {!sess.roomConsented ? <RoomConsent /> : <RoomCapture />}
+        </div>
       ) : !sess.calibrated ? (
         <Calibrate />
       ) : (
@@ -88,230 +154,525 @@ export default function Studio() {
   )
 }
 
-type OrbState = 'speaking' | 'listening' | 'thinking' | 'idle' | 'alert'
-
-/* The AI voice. Speaking: ripples out. Listening: swells with your level. Thinking: contracts. */
-export function Orb({ state, level = 0, size = 184 }: { state: OrbState; level?: number; size?: number }) {
-  const scale = state === 'listening' ? 1 + Math.min(0.14, level * 0.18) : 1
+/* The prototype records nothing. Bolo follows a simulated voice unless you opt in to your real mic level,
+   which is read on this phone and thrown away every frame. The browser asks only when you start recording. */
+function MicSource() {
+  const { s, a } = useStore()
+  const real = s.sim.realMic
   return (
-    <div className={`relative grid place-items-center ${state === 'speaking' ? 'orb-speaking' : ''}`} style={{ width: size, height: size }} aria-hidden>
-      {state === 'speaking' && [0, 0.6, 1.2].map((d) => <span key={d} className="orb-ripple absolute inset-0 rounded-full border-2 border-ultra/40" style={{ animationDelay: `${d}s` }} />)}
-      {state === 'listening' && <span className="absolute inset-[-14px] rounded-full bg-ultra/10 transition-transform duration-150 ease-out" style={{ transform: `scale(${scale})` }} />}
-      {state === 'alert' && <span className="absolute inset-[-10px] rounded-full ring-2 ring-signal/50" />}
-      <div className={`orb relative h-full w-full overflow-hidden rounded-full transition-[transform,filter] duration-300 ease-out ${state === 'thinking' ? 'orb-think' : state === 'idle' ? 'orb-idle' : ''}`} style={{ transform: state === 'listening' ? `scale(${scale})` : state === 'alert' ? 'scale(0.9)' : undefined, filter: state === 'alert' ? 'saturate(0.35) brightness(1.05)' : undefined }}>
-        <span className="orb-sheen absolute inset-0 rounded-full" />
-      </div>
-    </div>
-  )
-}
-
-function useLevel(on: boolean, base = 0.55) {
-  const [l, setL] = useState(0)
-  useEffect(() => {
-    if (!on) return setL(0)
-    const t = setInterval(() => setL(base + (Math.random() - 0.5) * 0.35), 120)
-    return () => clearInterval(t)
-  }, [on, base])
-  return l
-}
-
-/* Types an AI line out word by word while the orb is speaking. */
-function useSpeak(text: string, on: boolean, onDone: () => void) {
-  const words = text.split(' ')
-  const [n, setN] = useState(on ? 0 : words.length)
-  useEffect(() => {
-    if (!on) return setN(words.length)
-    setN(0)
-    let i = 0
-    const t = setInterval(() => {
-      i++
-      setN(i)
-      if (i >= words.length) (clearInterval(t), setTimeout(onDone, 350))
-    }, 140)
-    return () => clearInterval(t)
-  }, [text, on])
-  return words.slice(0, n).join(' ')
-}
-
-function Calibrate() {
-  const { a } = useStore()
-  const [step, setStep] = useState(0)
-  const [rec, setRec] = useState(false)
-  const level = useLevel(rec)
-  const phrases = ['“Ek, do, teen, char, paanch.”', '“Aaj mausam accha hai.”']
-  useEffect(() => {
-    if (!rec) return
-    const t = setTimeout(() => {
-      setRec(false)
-      if (step === 1) a.calibrated()
-      else setStep(1)
-    }, 2200)
-    return () => clearTimeout(t)
-  }, [rec, step])
-  return (
-    <div className="flex flex-1 flex-col items-center px-6 pt-8 pb-8 text-center">
-      <span className="inline-flex h-7 items-center rounded-full bg-surface px-3 text-[12px] font-semibold text-ink-2">Level check · {step + 1} of 2</span>
-      <div className="mt-8">
-        <Orb state={rec ? 'listening' : 'idle'} level={level} size={148} />
-      </div>
-      <h2 className="mt-8 max-w-[26ch] text-[22px] leading-tight font-semibold text-balance">Hold the phone about 15 cm from your mouth and say</h2>
-      <p className="mt-3 text-[24px] leading-snug font-medium text-ultra">{phrases[step]}</p>
-      <p className="mt-4 h-5 text-[14px] text-ink-2">{rec ? (level > 0.3 ? 'Good level. Keep going.' : 'A little louder.') : 'This check is not submitted or paid.'}</p>
-      <div className="mt-auto pt-8">
-        <RecordButton on={rec} onClick={() => setRec(true)} />
-      </div>
-    </div>
-  )
-}
-
-function RecordButton({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button onClick={onClick} disabled={disabled} aria-label={on ? 'Stop recording' : 'Start recording'} className={`grid h-[76px] w-[76px] place-items-center rounded-full transition-[background-color,box-shadow,scale] duration-200 ease-out active:scale-95 disabled:opacity-35 ${on ? 'bg-ink shadow-[0_0_0_8px_rgba(14,15,20,.08)]' : 'bg-ultra shadow-[0_14px_30px_-10px_rgba(43,59,255,.7)]'}`}>
-      {on ? <span className="h-6 w-6 rounded-[7px] bg-white" /> : <Icon n="mic" s={28} className="text-white" />}
+    <button
+      aria-pressed={real}
+      aria-label={
+        real
+          ? "Using your live mic level. Switch to the demo level"
+          : "Using a demo mic level. Switch to your live mic level"
+      }
+      onClick={() => (
+        a.setSim({ realMic: !real }),
+        a.toast(
+          real
+            ? "Back to the demo level. Nothing is recorded either way."
+            : "Bolo will follow your real mic level when you record. Nothing leaves this phone.",
+        )
+      )}
+      className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-12 font-semibold transition-colors ${
+        real
+          ? "bg-cobalt text-white"
+          : "bg-white/8 text-studio-ink-2 hover:text-studio-ink"
+      }`}
+    >
+      <Icon n="wave" s={14} stroke={2} />
+      {real ? "Live" : "Demo"}
     </button>
   )
 }
 
-type Phase = 'ai' | 'idle' | 'recording' | 'paused' | 'noise' | 'silence' | 'thinking' | 'recorded' | 'miclost' | 'loadfail' | 'loading'
+const useLevel = (on: boolean) => {
+  const { s, a } = useStore()
+  return useVoiceLevel(on, s.sim.realMic, () =>
+    a.toast("Microphone level unavailable, so Bolo is using the demo level"),
+  )
+}
+
+/** True once the voice has been near-silent for a while: Bolo coaches instead of guessing. */
+function useQuiet(level: MotionValue<number>, on: boolean) {
+  const [quiet, setQuiet] = useState(false)
+  const since = useRef<number | null>(null)
+  useMotionValueEvent(level, "change", (v) => {
+    if (!on) return
+    const now = performance.now()
+    if (v < 0.08) {
+      if (since.current == null) since.current = now
+      else if (now - since.current > 1500 && !quiet) setQuiet(true)
+    } else {
+      since.current = null
+      if (quiet) setQuiet(false)
+    }
+  })
+  useEffect(() => {
+    if (on) return
+    since.current = null
+    setQuiet(false)
+  }, [on])
+  return quiet
+}
+
+function RecordButton({
+  on,
+  onClick,
+  disabled,
+  label,
+}: {
+  on: boolean
+  onClick: () => void
+  disabled?: boolean
+  label?: string
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label ?? (on ? "Stop recording" : "Start recording")}
+      className={`relative grid h-[76px] w-[76px] place-items-center rounded-full transition-[background-color,box-shadow,scale,opacity] duration-200 ease-(--ease-spring) active:not-disabled:scale-95 disabled:opacity-30 ${
+        on ? "bg-white" : "bg-cobalt shadow-cobalt"
+      }`}
+    >
+      {on && (
+        <span
+          aria-hidden
+          className="ping-soft absolute inset-0 rounded-full bg-cobalt/35"
+        />
+      )}
+      {on ? (
+        <span className="relative h-6 w-6 rounded-[7px] bg-cobalt" />
+      ) : (
+        <Icon n="mic" s={28} className="text-white" />
+      )}
+    </button>
+  )
+}
+
+function Calibrate() {
+  const { s, a } = useStore()
+  const j = sel.job(s, s.session!.jobId)
+  const [step, setStep] = useState(0)
+  const [rec, setRec] = useState(false)
+  const [ok, setOk] = useState(false)
+  const level = useLevel(rec)
+  const phrases = [LANGS[j.lang].count, LANGS[j.lang].phrase]
+  useEffect(() => {
+    if (!rec) return
+    const t = setTimeout(() => (setRec(false), setOk(true), buzz(10)), 2400)
+    return () => clearTimeout(t)
+  }, [rec])
+  useEffect(() => {
+    if (!ok) return
+    const t = setTimeout(() => {
+      setOk(false)
+      if (step === 1) a.calibrated()
+      else setStep(1)
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [ok, step, a])
+  const state: BoloState = ok ? "passed" : rec ? "recording" : "coaching"
+  return (
+    <div className="flex flex-1 flex-col items-center px-6 pt-4 pb-8 text-center">
+      <Tag tone="studio">Level check · {step + 1} of 2</Tag>
+      <BoloStage state={state} level={level} size={232} className="mt-2" />
+      <h2 className="semi -mt-1 max-w-[24ch] text-24 font-bold">
+        Hold the phone about 15 cm away and say
+      </h2>
+      <p
+        key={step}
+        lang={j.lang}
+        className="script rise mt-3 text-24 font-semibold text-peri"
+      >
+        “{phrases[step]}”
+      </p>
+      <p aria-live="polite" className="mt-3 h-5 text-14 text-studio-ink-2">
+        {ok
+          ? "That is your level. Bolo will remember it."
+          : rec
+            ? "Good. Keep going at this volume."
+            : "Only a check. Not submitted and not paid."}
+      </p>
+      <div className="mt-auto pt-6">
+        <RecordButton
+          on={rec}
+          disabled={ok}
+          label={rec ? "Listening" : "Start the level check"}
+          onClick={() => !rec && setRec(true)}
+        />
+      </div>
+    </div>
+  )
+}
+
+type Phase = "ai" | "idle" | "recording" | "paused" | "noise" | "silence" | "thinking" | "recorded" | "miclost" | "loadfail" | "loading"
+
+/* Studio phases expressed through Bolo's state contract. */
+const PHASE_STATE: Record<Phase, BoloState> = {
+  ai: "speaking",
+  idle: "listening",
+  recording: "recording",
+  paused: "idle",
+  noise: "retry",
+  silence: "coaching",
+  thinking: "processing",
+  recorded: "passed",
+  miclost: "retry",
+  loadfail: "retry",
+  loading: "processing",
+}
+
+/** Who Bolo is playing for this turn, parsed from the prompt ("Owner: …" → Bolo as the owner). */
+function cue(j: Job, p: Prompt) {
+  if (!p.stem)
+    return { who: "Bolo · the scene", line: j.situation, native: false }
+  if (j.format === "LINES")
+    return { who: "Bolo · how to say it", line: p.stem, native: false }
+  const m = p.stem.match(/^([A-Z][A-Za-z ]{1,20}):\s*(.+)$/)
+  if (m)
+    return {
+      who: `Bolo as the ${m[1].toLowerCase()}`,
+      line: m[2],
+      native: true,
+    }
+  if (j.format === "INTERVIEW")
+    return { who: "Bolo · asking", line: p.stem, native: true }
+  return { who: "Bolo · the scene", line: p.stem, native: false }
+}
 
 function Capture() {
   const { s, a } = useStore()
   const sess = s.session!
   const j = sel.job(s, sess.jobId)
   const clip = sess.clips[sess.index]
-  const aiLine = clip.prompt.stem ?? j.situation
-  const [phase, setPhase] = useState<Phase>(clip.state === 'recorded_local' ? 'recorded' : 'ai')
-  const [t, setT] = useTimer(phase === 'recording')
+  const lines = j.format === "LINES"
+  const c = cue(j, clip.prompt)
+  const [phase, setPhase] = useState<Phase>(
+    clip.state === "recorded_local" ? "recorded" : "ai",
+  )
+  const [t, setT] = useTimer(phase === "recording")
   const [noiseShown, setNoiseShown] = useState(false)
-  const level = useLevel(phase === 'recording')
-  const said = useSpeak(aiLine, phase === 'ai', () => setPhase('idle'))
+  const level = useLevel(phase === "recording")
+  const quiet = useQuiet(level, phase === "recording")
 
   // Prototype hooks from the Simulate panel
   useEffect(() => {
     const on = (e: Event) => {
       const k = (e as CustomEvent).detail
-      if (k === 'mic-lost') setPhase('miclost')
-      if (k === 'prompt-fail') setPhase('loadfail')
+      if (k === "mic-lost") setPhase("miclost")
+      if (k === "prompt-fail") setPhase("loadfail")
     }
-    window.addEventListener('feul:sim', on)
-    return () => window.removeEventListener('feul:sim', on)
+    window.addEventListener("feul:sim", on)
+    return () => window.removeEventListener("feul:sim", on)
   }, [])
-  const retryLine = () => {
-    setPhase('loading')
-    setTimeout(() => setPhase('ai'), 1100)
-  }
-
-  // Deterministic noise event on the second clip, first attempt: shows the noise-pause state.
   useEffect(() => {
-    if (phase === 'recording' && sess.index === 1 && !noiseShown && !sess.repairOf && t >= 3) {
+    if (phase !== "loading") return
+    const id = setTimeout(() => setPhase("ai"), 1100)
+    return () => clearTimeout(id)
+  }, [phase])
+  useEffect(() => {
+    if (phase !== "thinking") return
+    const id = setTimeout(() => (setPhase("recorded"), buzz([8, 40, 8])), 900)
+    return () => clearTimeout(id)
+  }, [phase])
+
+  // Deterministic noise event on the second turn, first attempt: shows the noise-pause state.
+  useEffect(() => {
+    if (
+      phase === "recording" &&
+      sess.index === 1 &&
+      !noiseShown &&
+      !sess.repairOf &&
+      t >= 3
+    ) {
       setNoiseShown(true)
-      setPhase('noise')
+      setPhase("noise")
+      buzz(30)
     }
-  }, [t, phase])
+  }, [t, phase, sess.index, noiseShown, sess.repairOf])
 
   const stop = () => {
-    if (t < 2) return setPhase('silence')
-    a.setClip(sess.index, { state: 'recorded_local', secs: t })
-    setPhase('thinking')
-    setTimeout(() => setPhase('recorded'), 900)
+    if (t < 2) return setPhase("silence")
+    a.setClip(sess.index, { state: "recorded_local", secs: t })
+    setPhase("thinking")
   }
   const next = () => {
-    const nxt = sess.clips.findIndex((c, i) => i > sess.index && c.state === 'ready')
-    const any = sess.clips.findIndex((c, i) => i !== sess.index && c.state === 'ready')
+    const nxt = sess.clips.findIndex(
+      (x, i) => i > sess.index && x.state === "ready",
+    )
+    const any = sess.clips.findIndex(
+      (x, i) => i !== sess.index && x.state === "ready",
+    )
     if (nxt >= 0) a.goClip(nxt)
     else if (any >= 0) a.goClip(any)
     else a.toReview()
   }
-  const allDone = sess.clips.every((c, i) => c.state !== 'ready' || (i === sess.index && (phase === 'recorded' || phase === 'thinking')))
-  const orb: OrbState = phase === 'ai' ? 'speaking' : phase === 'recording' ? 'listening' : phase === 'thinking' || phase === 'loading' ? 'thinking' : phase === 'noise' || phase === 'miclost' || phase === 'loadfail' ? 'alert' : 'idle'
-  // When something goes wrong, the AI says so in its own voice instead of a system banner.
-  const aiAside: Partial<Record<Phase, string>> = {
+  const allDone = sess.clips.every(
+    (x, i) =>
+      x.state !== "ready" ||
+      (i === sess.index && (phase === "recorded" || phase === "thinking")),
+  )
+  const state: BoloState =
+    phase === "recorded" && allDone
+      ? "complete"
+      : lines && phase === "ai"
+        ? "coaching"
+        : PHASE_STATE[phase]
+  // When something goes wrong, Bolo says so in its own voice instead of a system banner.
+  const asides: Partial<Record<Phase, string>> = {
     noise: `I lost you for a second, a loud sound came through. Your ${t}s so far is saved. Move somewhere quieter and carry on?`,
-    silence: 'I only caught a couple of seconds. Say a little more, like you would to them.',
+    silence: lines
+      ? "I only caught a second or so. Read the whole line at your normal pace."
+      : "I only caught a couple of seconds. Say a little more, the way you would to them.",
     miclost: `Your microphone stopped, maybe another app took it. Your ${t}s so far is saved on this phone.`,
-    loadfail: "I couldn't load my next line. Check your connection and I'll try again.",
-    loading: 'One moment…',
+    loadfail:
+      "I couldn't load my next line. Check your connection and I'll try again.",
+    loading: "One moment, getting my line back.",
   }
-  const aside = aiAside[phase]
-  const who = j.format === 'INTERVIEW' ? 'Interviewer' : sess.index === 0 && !clip.prompt.stem ? 'Feul' : 'The other person'
+  const aside = asides[phase]
+  const warn = phase === "noise" || phase === "miclost" || phase === "loadfail"
   const status =
-    phase === 'noise' ? 'Paused · too noisy' : phase === 'miclost' ? 'Microphone disconnected' : phase === 'loadfail' ? 'Offline' : phase === 'loading' ? 'Reconnecting…' : phase === 'silence' ? 'Too short to save' : phase === 'ai' ? 'Speaking…' : phase === 'recording' ? (level < 0.3 ? 'Listening · a little louder' : 'Listening') : phase === 'paused' ? 'Paused · your take so far is kept' : phase === 'thinking' ? 'Thinking of a follow-up…' : phase === 'recorded' ? 'Got it · saved on this device' : 'Your turn'
+    phase === "noise"
+      ? "Paused · too noisy"
+      : phase === "miclost"
+        ? "Microphone disconnected"
+        : phase === "loadfail"
+          ? "Offline"
+          : phase === "loading"
+            ? "Reconnecting…"
+            : phase === "silence"
+              ? "Too short to keep"
+              : phase === "ai"
+                ? lines
+                  ? "Bolo is directing"
+                  : "Bolo is speaking"
+                : phase === "recording"
+                  ? quiet
+                    ? "Can't hear you · come a little closer"
+                    : "Recording"
+                  : phase === "paused"
+                    ? "Paused · your take so far is kept"
+                    : phase === "thinking"
+                      ? "Checking the take on this phone…"
+                      : phase === "recorded"
+                        ? allDone
+                          ? "Every turn recorded"
+                          : "Clear take · saved on this phone"
+                        : "Your turn · Bolo is listening"
 
   return (
-    <div className="flex flex-1 flex-col px-5 pt-6 pb-7">
+    <div className="flex flex-1 flex-col px-5 pt-1 pb-7">
+      {clip.prompt.chapter && (
+        <div className="eyebrow mt-2 text-center text-studio-ink-3">
+          Chapter · {clip.prompt.chapter}
+        </div>
+      )}
       <div className="flex flex-col items-center">
-        <Orb state={orb} level={level} />
-        <div className="mt-5 flex h-6 items-center gap-2 text-[13px] font-medium text-ink-2">
-          {phase === 'recording' && <span className="h-2 w-2 animate-pulse rounded-full bg-ultra motion-reduce:animate-none" />}
+        <BoloStage state={state} level={level} size={228} />
+        <div
+          aria-live="polite"
+          className={`-mt-2 flex h-6 items-center gap-2 text-14 font-medium ${
+            warn
+              ? "text-orange"
+              : phase === "recorded"
+                ? "text-lime"
+                : "text-studio-ink-2"
+          }`}
+        >
+          {phase === "recording" && (
+            <span className="pulse-dot h-2 w-2 rounded-full bg-cobalt-hi" />
+          )}
           {status}
-          {(phase === 'recording' || phase === 'paused') && <span className="num text-ink">{mmss(t)}</span>}
+          {(phase === "recording" || phase === "paused") && (
+            <span className="tnum text-studio-ink">{mmss(t)}</span>
+          )}
         </div>
       </div>
 
-      {/* What the AI said */}
-      <div className="mt-5 rounded-[24px] bg-surface p-4 shadow-[0_1px_2px_rgba(14,15,20,.04)]">
-        <div className="flex items-center justify-between">
-          <span className={`text-[12px] font-semibold ${aside ? 'text-[#c2410c]' : 'text-ultra'}`}>{aside ? 'Feul' : who}</span>
-          {!aside && phase !== 'ai' && (
-            <button onClick={() => setPhase('ai')} disabled={phase === 'recording'} className="-m-2 inline-flex items-center gap-1 p-2 text-[12px] font-medium text-ink-2 disabled:opacity-40">
+      {/* What Bolo says: the other person's line, a direction, or what went wrong */}
+      <div
+        className={`mt-4 rounded-lg p-4 transition-[background-color,box-shadow] duration-300 ${
+          aside
+            ? warn
+              ? "bg-orange/10 shadow-[inset_0_0_0_1px_rgb(255_90_31/.4)]"
+              : "bg-cobalt/12 shadow-[inset_0_0_0_1px_rgb(88_102_255/.35)]"
+            : "bg-studio-2 shadow-[inset_0_0_0_1px_var(--color-studio-line)]"
+        }`}
+      >
+        <div className="flex min-h-5 items-center justify-between gap-3">
+          <span
+            className={`eyebrow ${aside && warn ? "text-orange" : "text-peri"}`}
+          >
+            {aside ? "Bolo" : c.who}
+          </span>
+          {!aside && phase !== "ai" && (
+            <button
+              onClick={() => setPhase("ai")}
+              disabled={phase === "recording"}
+              className="-m-2 inline-flex items-center gap-1 rounded-full p-2 text-12 font-semibold text-studio-ink-2 hover:text-studio-ink disabled:opacity-35"
+            >
               <Icon n="retry" s={13} /> Hear again
             </button>
           )}
         </div>
-        <p className="mt-1.5 min-h-[48px] text-[18px] leading-snug font-medium text-pretty">
-          {aside ?? said}
-          {phase === 'ai' && <span className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-ultra" />}
+        <p
+          lang={aside || !c.native ? "en" : j.lang}
+          className={`mt-1.5 min-h-[52px] leading-snug font-medium text-pretty ${
+            !aside && c.native ? "script text-20" : "text-18"
+          }`}
+        >
+          {aside ? (
+            <Typed key={phase} text={aside} step={26} />
+          ) : phase === "ai" ? (
+            <Typed
+              text={c.line}
+              step={c.native ? 120 : 70}
+              onDone={() => setPhase("idle")}
+            />
+          ) : (
+            c.line
+          )}
         </p>
       </div>
 
-      {/* Hint for your answer */}
-      <div className={`mt-3 flex gap-3 rounded-[24px] bg-primary-soft p-4 transition-opacity duration-300 ${phase === 'ai' || aside ? 'opacity-40' : ''}`}>
-        <Icon n="mic" s={18} className="mt-0.5 shrink-0 text-ultra" />
-        <div>
-          <div className="text-[12px] font-semibold text-on-primary-soft">Your reply · {sess.index + 1} of {sess.clips.length}</div>
-          <p className="mt-0.5 text-[15px] leading-snug text-ink">{clip.prompt.text}</p>
+      {/* Your turn */}
+      <div
+        className={`mt-2.5 flex gap-3 rounded-lg bg-white/[.06] p-4 transition-opacity duration-300 ${
+          phase === "ai" || aside ? "opacity-45" : ""
+        }`}
+      >
+        <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-cobalt text-white">
+          <Icon n="mic" s={15} stroke={2} />
+        </span>
+        <div className="min-w-0">
+          <div className="eyebrow text-studio-ink-2">
+            {lines ? "Read this" : "Your reply"} ·{" "}
+            <span className="tnum">
+              {sess.index + 1} of {sess.clips.length}
+            </span>
+          </div>
+          <p
+            lang={lines ? j.lang : "en"}
+            className={`mt-1 leading-snug ${
+              lines ? "script text-24 font-semibold" : "text-16"
+            }`}
+          >
+            {clip.prompt.text}
+          </p>
         </div>
       </div>
 
-      <div className="mt-auto pt-6">
-        {phase === 'noise' || phase === 'miclost' ? (
+      <div className="mt-auto pt-5">
+        {phase === "noise" || phase === "miclost" ? (
           <div className="flex gap-2">
-            <Btn full size="lg" onClick={() => setPhase('recording')}>{phase === 'miclost' ? 'Reconnect and continue' : 'Continue'}</Btn>
-            <Btn size="lg" v="outlined" onClick={() => (setT(0), setPhase('idle'))}>Retake</Btn>
+            <Btn full size="lg" v="white" onClick={() => setPhase("recording")}>
+              {phase === "miclost" ? "Reconnect and continue" : "Continue"}
+            </Btn>
+            <Btn
+              size="lg"
+              v="glass"
+              icon="retry"
+              onClick={() => (setT(0), setPhase("idle"))}
+            >
+              Retake
+            </Btn>
           </div>
-        ) : phase === 'silence' ? (
-          <Btn full size="lg" icon="mic" onClick={() => (setT(0), setPhase('idle'))}>Try again</Btn>
-        ) : phase === 'loadfail' || phase === 'loading' ? (
-          <Btn full size="lg" icon="retry" disabled={phase === 'loading'} onClick={retryLine}>{phase === 'loading' ? 'Trying again…' : 'Try again'}</Btn>
+        ) : phase === "silence" ? (
+          <Btn
+            full
+            size="lg"
+            v="voice"
+            icon="mic"
+            onClick={() => (setT(0), setPhase("idle"))}
+          >
+            Try again
+          </Btn>
+        ) : phase === "loadfail" || phase === "loading" ? (
+          <Btn
+            full
+            size="lg"
+            v="white"
+            icon="retry"
+            disabled={phase === "loading"}
+            onClick={() => setPhase("loading")}
+          >
+            {phase === "loading" ? "Trying again…" : "Try again"}
+          </Btn>
         ) : (
           <div className="grid grid-cols-3 items-center">
             <div>
-              {phase === 'recording' && (
-                <button onClick={() => setPhase('paused')} className="flex items-center gap-2 text-[14px] font-medium text-ink-2">
+              {phase === "recording" && (
+                <button
+                  onClick={() => setPhase("paused")}
+                  className="flex h-11 items-center gap-2 text-14 font-semibold text-studio-ink-2 hover:text-studio-ink"
+                >
                   <Icon n="pause" s={16} /> Pause
                 </button>
               )}
-              {phase === 'paused' && (
-                <button onClick={() => setPhase('recording')} className="text-[14px] font-semibold text-ultra">
+              {phase === "paused" && (
+                <button
+                  onClick={() => setPhase("recording")}
+                  className="h-11 text-14 font-semibold text-peri"
+                >
                   Continue
                 </button>
               )}
-              {phase === 'recorded' && (
-                <button onClick={() => (a.setClip(sess.index, { state: 'ready', secs: 0 }), setT(0), setPhase('idle'))} className="flex items-center gap-2 text-[14px] font-medium text-ink-2">
+              {phase === "recorded" && (
+                <button
+                  onClick={() => (
+                    a.setClip(sess.index, { state: "ready", secs: 0 }),
+                    setT(0),
+                    setPhase("idle")
+                  )}
+                  className="flex h-11 items-center gap-2 text-14 font-semibold text-studio-ink-2 hover:text-studio-ink"
+                >
                   <Icon n="retry" s={16} /> Retake
                 </button>
               )}
             </div>
             <div className="flex justify-center">
-              {phase === 'recorded' ? (
-                <button onClick={next} className="grid h-[76px] w-[76px] place-items-center rounded-full bg-ink text-white transition-transform active:scale-95" aria-label={allDone ? 'Check your takes' : 'Next turn'}>
-                  <Icon n={allDone ? 'check' : 'chev'} s={28} />
+              {phase === "recorded" ? (
+                <button
+                  onClick={next}
+                  className="pop-in grid h-[76px] w-[76px] place-items-center rounded-full bg-white text-ink transition-transform duration-200 ease-(--ease-spring) active:scale-95"
+                  aria-label={
+                    allDone
+                      ? "Check your takes"
+                      : lines
+                        ? "Next line"
+                        : "Next turn"
+                  }
+                >
+                  <Icon n={allDone ? "check" : "arrow"} s={28} stroke={2.2} />
                 </button>
               ) : (
-                <RecordButton on={phase === 'recording' || phase === 'paused'} disabled={phase === 'ai' || phase === 'thinking'} onClick={() => (phase === 'idle' ? setPhase('recording') : stop())} />
+                <RecordButton
+                  on={phase === "recording" || phase === "paused"}
+                  disabled={phase === "ai" || phase === "thinking"}
+                  onClick={() =>
+                    phase === "idle" ? (setPhase("recording"), buzz(8)) : stop()
+                  }
+                />
               )}
             </div>
-            <div className="text-right text-[13px] font-medium text-ink-2">{phase === 'recorded' ? (allDone ? 'Check takes' : 'Next turn') : phase === 'idle' ? 'Tap to reply' : ''}</div>
+            <div className="text-right text-12 font-semibold text-studio-ink-2">
+              {phase === "recorded"
+                ? allDone
+                  ? "Check takes"
+                  : lines
+                    ? "Next line"
+                    : "Next turn"
+                : phase === "idle"
+                  ? lines
+                    ? "Tap to read"
+                    : "Tap to reply"
+                  : phase === "recording"
+                    ? "Tap to finish"
+                    : ""}
+            </div>
           </div>
         )}
       </div>
@@ -326,24 +687,55 @@ function RoomConsent() {
   const [minor, setMinor] = useState<number | null>(null)
   return (
     <div className="flex flex-1 flex-col px-6 pt-6 pb-8">
-      <div className="text-[13px] font-medium text-ink-2">Room · everyone consents first</div>
-      <h2 className="mt-3 text-[24px] leading-tight font-semibold">Each person hears the consent in {LANGS[j.lang].name} and confirms they are 18+.</h2>
-      <p className="mt-2 text-[14px] text-ink-2">The microphone stays off until all {j.participants} people have consented.</p>
+      <span className="eyebrow text-studio-ink-3">
+        Room · everyone consents first
+      </span>
+      <h2 className="semi mt-3 text-24 leading-tight font-bold">
+        Each person hears the consent in {LANGS[j.lang].name} and confirms they
+        are 18+.
+      </h2>
+      <p className="mt-2 text-14 text-studio-ink-2">
+        The microphone stays off until all {j.participants ?? ok.length} people
+        have consented.
+      </p>
       <ul className="mt-6 space-y-2">
         {ok.map((v, i) => (
-          <li key={i} className="rounded-[24px] bg-surface p-4">
+          <li
+            key={i}
+            className="rounded-lg bg-studio-2 p-4 shadow-[inset_0_0_0_1px_var(--color-studio-line)]"
+          >
             <div className="flex items-center gap-3">
-              <span className={`grid h-9 w-9 place-items-center rounded-full ${v ? 'bg-ultra text-white' : 'bg-primary-soft text-on-primary-soft num text-[14px] font-semibold'}`}>{v ? <Icon n="check" s={16} /> : i + 1}</span>
+              <span
+                className={`tnum grid h-9 w-9 place-items-center rounded-full text-14 font-semibold ${
+                  v ? "bg-lime text-ink" : "bg-white/8 text-studio-ink"
+                }`}
+              >
+                {v ? <Icon n="check" s={16} stroke={2.4} /> : i + 1}
+              </span>
               <div className="flex-1">
-                <div className="font-semibold">{i === 0 ? 'You' : `Participant ${i + 1}`}</div>
-                <div className="text-[13px] text-ink-2">{v ? 'Consented · 18+' : minor === i ? 'Under 18 · cannot take part' : 'Not yet'}</div>
+                <div className="font-semibold">
+                  {i === 0 ? "You" : `Participant ${i + 1}`}
+                </div>
+                <div className="text-12 text-studio-ink-2">
+                  {v
+                    ? "Consented · 18+"
+                    : minor === i
+                      ? "Under 18 · cannot take part"
+                      : "Not yet"}
+                </div>
               </div>
               {!v && minor !== i && (
                 <div className="flex gap-1.5">
-                  <Btn size="sm" v="filled" onClick={() => setOk(ok.map((x, k) => (k === i ? true : x)))}>
+                  <Btn
+                    size="sm"
+                    v="white"
+                    onClick={() =>
+                      setOk(ok.map((x, k) => (k === i ? true : x)))
+                    }
+                  >
                     Consents
                   </Btn>
-                  <Btn size="sm" v="text" className="text-ink-2" onClick={() => setMinor(i)}>
+                  <Btn size="sm" v="glass" onClick={() => setMinor(i)}>
                     Under 18
                   </Btn>
                 </div>
@@ -353,16 +745,32 @@ function RoomConsent() {
         ))}
       </ul>
       {minor != null && (
-        <p className="mt-3 rounded-[24px] bg-signal-soft p-4 text-[14px] text-[#c2410c]">Feul is for adults only right now. Invite another adult to join, or save this session and come back within 24h.</p>
-      )}
-      {minor != null && (
-        <button onClick={() => (setMinor(null), setOk(ok.map((x, k) => (k === minor ? false : x))))} className="mt-2 self-start text-[14px] text-primary">
-          Another adult will join instead
-        </button>
+        <>
+          <p className="mt-3 rounded-lg bg-orange/12 p-4 text-14 text-orange">
+            Feul is for adults only right now. Invite another adult to join, or
+            save this session and come back within 24h.
+          </p>
+          <button
+            onClick={() => (
+              setMinor(null), setOk(ok.map((x, k) => (k === minor ? false : x)))
+            )}
+            className="mt-2 self-start text-14 font-semibold text-peri"
+          >
+            Another adult will join instead
+          </button>
+        </>
       )}
       <div className="mt-auto pt-8">
-        <Btn full size="lg" v="filled" disabled={!ok.every(Boolean)} onClick={a.roomConsented}>
-          {ok.every(Boolean) ? 'Everyone consented · continue' : `Waiting for ${ok.filter((x) => !x).length} more`}
+        <Btn
+          full
+          size="lg"
+          v="voice"
+          disabled={!ok.every(Boolean)}
+          onClick={a.roomConsented}
+        >
+          {ok.every(Boolean)
+            ? "Everyone consented · continue"
+            : `Waiting for ${ok.filter((x) => !x).length} more`}
         </Btn>
       </div>
     </div>
@@ -375,52 +783,108 @@ function RoomCapture() {
   const [rec, setRec] = useState(false)
   const [spk, setSpk] = useState(0)
   const [t] = useTimer(rec)
-  const level = useLevel(rec, 0.5)
+  const level = useLevel(rec)
   const end = () => {
-    sess.clips.forEach((_, i) => a.setClip(i, { state: 'recorded_local', secs: Math.max(20, Math.round(t / sess.clips.length)) }))
+    sess.clips.forEach((_, i) =>
+      a.setClip(i, {
+        state: "recorded_local",
+        secs: Math.max(20, Math.round(t / sess.clips.length)),
+      }),
+    )
     setRec(false)
     a.toReview()
   }
   return (
     <div className="flex flex-1 flex-col px-6 pt-6 pb-8">
-      <div className="text-[13px] font-medium text-ink-2">One continuous take</div>
-      <h2 className="mt-3 text-[22px] leading-snug font-medium">Talk about your weekend plans. Move on when the conversation does, there's no fixed timer.</h2>
+      <span className="eyebrow text-studio-ink-3">One continuous take</span>
+      <h2 className="semi mt-3 text-24 leading-snug font-bold">
+        Talk about your weekend plans. Move on when the conversation does,
+        there's no fixed timer.
+      </h2>
       <ul className="mt-6 space-y-2">
         {sess.clips.map((c, i) => (
-          <li key={c.id} className={`flex items-center gap-3 rounded-[24px] p-3.5 transition-[background-color,box-shadow,opacity] duration-200 ${i === spk && rec ? 'bg-surface shadow-[0_0_0_2px_var(--color-ultra)]' : 'bg-surface'} ${i < spk ? 'opacity-60' : ''}`}>
-            <span className={`h-2.5 w-2.5 rounded-full ${i === spk && rec ? 'bg-ultra animate-pulse motion-reduce:animate-none' : i < spk ? 'bg-ink-3' : 'bg-surface ring-1 ring-line-strong'}`} />
+          <li
+            key={c.id}
+            className={`flex items-center gap-3 rounded-lg bg-studio-2 p-3.5 transition-[box-shadow,opacity] duration-200 ${
+              i === spk && rec
+                ? "shadow-[inset_0_0_0_2px_var(--color-cobalt-hi)]"
+                : "shadow-[inset_0_0_0_1px_var(--color-studio-line)]"
+            } ${i < spk ? "opacity-55" : ""}`}
+          >
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                i === spk && rec
+                  ? "pulse-dot bg-cobalt-hi"
+                  : i < spk
+                    ? "bg-studio-ink-3"
+                    : "ring-1 ring-studio-ink-3"
+              }`}
+            />
             <div className="flex-1">
-              <div className="text-[15px] font-semibold">{c.prompt.speaker}</div>
-              <div className="text-[13px] text-ink-2">{c.prompt.text}</div>
+              <div className="text-16 font-semibold">{c.prompt.speaker}</div>
+              <div className="text-12 text-studio-ink-2">{c.prompt.text}</div>
             </div>
-            <span className="text-[12px] text-ink-2">{i === spk && rec ? 'Speaking' : i < spk ? 'Spoke' : 'Up next'}</span>
+            <span className="text-12 text-studio-ink-2">
+              {i === spk && rec ? "Speaking" : i < spk ? "Spoke" : "Up next"}
+            </span>
           </li>
         ))}
       </ul>
       <div className="mt-auto pt-6">
-        <div className="flex justify-center"><Orb state={rec ? 'listening' : 'idle'} level={level} size={120} /></div>
-        <div className="mt-3 flex items-center gap-4">
+        <div className="flex justify-center">
+          <BoloStage
+            state={rec ? "recording" : "listening"}
+            level={level}
+            size={156}
+          />
+        </div>
+        <div className="mt-2 flex items-center gap-4">
           <div className="flex-1">
-            <Meter level={level} />
+            <LevelBars level={level} />
           </div>
-          <span className="num text-[14px] font-medium">{mmss(t)}</span>
+          <span className="tnum text-14 font-medium">{mmss(t)}</span>
         </div>
         <div className="mt-6 flex items-center justify-between">
-          <button disabled={!rec} onClick={() => setSpk((x) => (x + 1) % sess.clips.length)} className="text-[14px] font-medium text-primary disabled:text-ink-3">
+          <button
+            disabled={!rec}
+            onClick={() => setSpk((x) => (x + 1) % sess.clips.length)}
+            className="text-14 font-semibold text-peri disabled:text-studio-ink-3"
+          >
             Next speaker →
           </button>
-          <RecordButton on={rec} onClick={() => (rec ? end() : setRec(true))} />
-          <span className="w-24 text-right text-[13px] text-ink-2">{rec ? 'Tap to end take' : 'Start take'}</span>
+          <RecordButton
+            on={rec}
+            onClick={() => (rec ? end() : setRec(true))}
+            label={rec ? "End the room take" : "Start the room take"}
+          />
+          <span className="w-24 text-right text-12 text-studio-ink-2">
+            {rec ? "Tap to end take" : "Start take"}
+          </span>
         </div>
       </div>
     </div>
   )
 }
-function Meter({ level }: { level: number }) {
+
+function LevelBars({ level }: { level: MotionValue<number> }) {
+  const [v, setV] = useState(0)
+  useMotionValueEvent(level, "change", (x) => setV(Math.round(x * 20) / 20))
   return (
-    <div className="flex h-2 gap-[3px]" aria-label="Microphone level">
+    <div
+      className="flex h-2 gap-[3px]"
+      role="meter"
+      aria-label="Microphone level"
+      aria-valuemin={0}
+      aria-valuemax={1}
+      aria-valuenow={v}
+    >
       {Array.from({ length: 20 }, (_, i) => (
-        <span key={i} className={`flex-1 rounded-sm ${i / 20 < level ? (i > 16 ? 'bg-err' : i > 12 ? 'bg-[#f0b43c]' : 'bg-ultra') : 'bg-surface-variant'}`} />
+        <span
+          key={i}
+          className={`flex-1 rounded-sm ${
+            i / 20 < v ? (i > 16 ? "bg-orange" : "bg-cobalt-hi") : "bg-white/10"
+          }`}
+        />
       ))}
     </div>
   )

@@ -1,104 +1,274 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { ENVS, FORMAT_LABEL, LANGS, jobTotal, type Env } from '../state/model'
-import { MIN_WITHDRAW, sel, useStore } from '../state/store'
-import { Banner, PillProgress, Btn, Card, ENV_TINT, Icon, JobRow, SceneIcon, Section, Status, Waveform, inr } from '../ui/kit'
+import { useEffect, useState } from "react"
+import {
+  FORMAT_LABEL,
+  LANGS,
+  LENGTHS,
+  jobTotal,
+  lengthOf,
+  perHour,
+  type Length,
+  type State,
+} from "../state/model"
+import { MIN_WITHDRAW, sel, useStore } from "../state/store"
+import Bolo, { Bubble, Typed, type Mood } from "../ui/Bolo"
+import {
+  Btn,
+  Card,
+  FORMAT_ICON,
+  Icon,
+  LengthTag,
+  Money,
+  Notice,
+  RareTag,
+  Section,
+  Status,
+  Tag,
+  Waveform,
+  inr,
+} from "../ui/kit"
+
+/** Missions already done: anything submitted, plus earnings recorded under a mission's title. */
+function finished(s: State) {
+  const earned = new Set(
+    s.ledger.filter((l) => l.kind === "earning").map((l) => l.title),
+  )
+  return new Set([
+    ...s.submissions.map((x) => x.jobId),
+    ...s.jobs.filter((j) => earned.has(j.title)).map((j) => j.id),
+  ])
+}
+
+/** Minutes of the shortest mission open to this contributor, if any. */
+const shortest = (s: State) => {
+  const m = Math.min(...sel.openForMe(s).map((j) => j.minutes))
+  return Number.isFinite(m) ? m : null
+}
 
 export default function Home() {
   const { s, a } = useStore()
   const open = sel.openForMe(s)
   const isNew = s.ledger.length === 0 && s.submissions.length === 0
-  const inReview = sel.inReview(s)
   const attention = sel.attention(s)
-  const reviewing = s.submissions.filter((x) => x.status === 'under_review' || x.status === 'appeal')
-  const next = open.find((j) => j.id !== s.session?.jobId)
+  const reviewing = s.submissions.filter(
+    (x) => x.status === "under_review" || x.status === "appeal",
+  )
+  const done = finished(s)
+  const fresh = open.filter((j) => !done.has(j.id) && j.id !== s.session?.jobId)
+  const byTime = [...fresh].sort((x, y) => x.minutes - y.minutes)
+  // First mission: the shortest one. After that: the rarest voice that still fits one sitting.
+  const next = isNew
+    ? byTime[0]
+    : ([...fresh]
+        .filter((j) => lengthOf(j) !== "deep")
+        .sort((x, y) => y.coverage - x.coverage)[0] ?? byTime[0])
+  const quick = byTime.filter(
+    (j) => lengthOf(j) === "quick" && j.id !== next?.id,
+  )
   const hr = new Date().getHours()
-  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
+  const greet =
+    hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening"
+  const empty = sel.eligible(s).length === 0
 
   return (
     <div className="pb-6">
-      <header className="px-5 pt-4">
-        <p className="text-[15px] text-ink-2">
-          {greet}, <span className="font-medium text-ink">{s.name}</span>
-        </p>
-        <h1 className="mt-1 text-[32px] leading-[1.08] font-semibold tracking-[-0.035em]">{open.length ? <>{open.length} conversations are<br />waiting for your voice.</> : 'Quiet day for work.'}</h1>
-      </header>
+      <BoloGreeting greet={greet} />
 
-      {(s.session || attention.length > 0 || (s.withdrawal && s.withdrawal.status !== 'paid')) && (
-        <div className="mt-6 flex flex-col gap-2.5 px-5">
+      {(s.session ||
+        attention.length > 0 ||
+        (s.withdrawal && s.withdrawal.status !== "paid")) && (
+        <div className="mt-5 flex flex-col gap-2.5 px-5">
           <SessionCard />
           {attention.map((x) => {
             const j = sel.job(s, x.jobId)
-            const bad = x.clips.filter((c) => c.state === 'repair_required').length
+            const bad = x.clips.filter(
+              (c) => c.state === "repair_required",
+            ).length
             return (
-              <Banner
+              <Notice
                 key={x.id}
-                tone="err"
-                title={j.format === 'ROOM' ? `${j.title}: repeat the room take` : `${j.title}: ${x.clips.length - bad}/${x.clips.length} accepted`}
+                tone="attention"
+                icon="retry"
+                title={
+                  j.format === "ROOM"
+                    ? `${j.title}: repeat the room take`
+                    : `${j.title}: ${x.clips.length - bad} of ${x.clips.length} accepted`
+                }
                 action={
-                  <Btn size="sm" onClick={() => a.push({ name: 'submission', id: x.id })}>
-                    {j.format === 'ROOM' ? 'See what to fix' : `Fix ${bad} ${bad === 1 ? 'clip' : 'clips'}`}
+                  <Btn
+                    size="sm"
+                    v="ink"
+                    icon="mic"
+                    onClick={() => a.push({ name: "submission", id: x.id })}
+                  >
+                    {j.format === "ROOM"
+                      ? "See what to fix"
+                      : `Retake ${bad} ${bad === 1 ? "turn" : "turns"} · 30 s`}
                   </Btn>
                 }
               >
-                Job total {inr(x.total)} is held until this is fixed. Accepted clips are kept.
-              </Banner>
+                <span className="tnum">{inr(x.total)}</span> is held, not lost.
+                Accepted turns are kept.
+              </Notice>
             )
           })}
-          {s.withdrawal && s.withdrawal.status !== 'paid' && (
-            <button onClick={() => a.push({ name: 'withdrawal' })} className="flex items-center gap-3 rounded-[24px] bg-surface p-4 text-left">
-              <Status k={s.withdrawal.status} />
-              <span className="flex-1 text-[14px] text-ink-2">
-                <span className="num font-semibold text-ink">{inr(s.withdrawal.amount)}</span> to {s.withdrawal.vpa}
+          {s.withdrawal && s.withdrawal.status !== "paid" && (
+            <button
+              onClick={() => a.push({ name: "withdrawal" })}
+              className="flex items-center gap-3 rounded-lg bg-surface p-4 text-left shadow-card transition-transform duration-300 ease-(--ease-spring) active:scale-[0.98]"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-orange-soft text-orange-ink">
+                <Icon n="bank" s={18} />
               </span>
-              <Icon n="chev" s={18} className="text-ink-3" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-14 font-semibold">
+                  <span className="tnum">{inr(s.withdrawal.amount)}</span> on
+                  its way to your bank
+                </span>
+                <span className="block truncate text-12 text-ink-2">
+                  {s.withdrawal.vpa}
+                </span>
+              </span>
+              <Status k={s.withdrawal.status} />
             </button>
           )}
         </div>
       )}
 
-      {isNew ? <FirstEarning /> : <EarningsModule inReview={inReview} />}
+      {isNew ? <FirstHundred /> : <MoneyCard />}
 
-      {sel.eligible(s).length === 0 ? (
+      {empty ? (
         <NoWork />
       ) : (
         <>
           {next ? (
-            <section className="mt-10 px-5">
-              <h2 className="mb-4 text-[20px] font-semibold tracking-[-0.01em]">{isNew ? 'Your first job' : 'Next for you'}</h2>
-              <NextJob id={next.id} />
+            <section className="mt-9 px-5">
+              <div className="mb-3.5 flex items-end justify-between">
+                <h2 className="semi text-20 font-bold">
+                  {isNew ? "Your first mission" : "Picked for your voice"}
+                </h2>
+                <button
+                  onClick={() => a.openLen("all")}
+                  className="text-14 font-semibold text-cobalt"
+                >
+                  All {open.length}
+                </button>
+              </div>
+              <HeroMission id={next.id} />
             </section>
           ) : (
-            <p className="mt-10 px-5 text-[15px] text-ink-2">You've started everything open for you today. New jobs will show up here.</p>
+            <p className="mt-9 px-5 text-16 text-ink-2">
+              You've started everything open for you today. New missions show up
+              here.
+            </p>
           )}
-          <SceneGrid />
+          {quick.length > 0 && <QuickRail ids={quick.map((j) => j.id)} />}
+          <LengthTiles />
         </>
       )}
 
       {reviewing.length > 0 && (
-        <Section title="In review" className="mt-10">
-          <ul>
+        <Section
+          title="With reviewers"
+          sub="Pending money is shown separately until it's approved."
+          className="mt-10"
+        >
+          <Card className="divide-y divide-line px-4 py-1">
             {reviewing.map((x) => {
               const j = sel.job(s, x.jobId)
               return (
-                <li key={x.id}>
-                  <button onClick={() => a.push({ name: 'submission', id: x.id })} className="flex w-full items-center gap-4 py-3 text-left">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-peach">
-                      <span className="h-2 w-2 rounded-full bg-signal" />
+                <button
+                  key={x.id}
+                  onClick={() => a.push({ name: "submission", id: x.id })}
+                  className="flex w-full items-center gap-3.5 py-3.5 text-left"
+                >
+                  <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-orange-soft">
+                    <span className="ping-soft absolute inset-2 rounded-full bg-orange/40" />
+                    <span className="relative h-2 w-2 rounded-full bg-orange" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-16 font-semibold">
+                      {j.title}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[16px] font-semibold">{j.title}</span>
-                      <span className="block truncate text-[13px] text-ink-2">{x.waitReason}</span>
+                    <span className="block truncate text-12 text-ink-2">
+                      {x.waitReason}
                     </span>
-                    <span className="num text-[16px] font-semibold">{inr(x.total)}</span>
-                  </button>
-                </li>
+                  </span>
+                  <span className="text-right">
+                    <span className="cond tnum block text-20 leading-none font-bold">
+                      {inr(x.total)}
+                    </span>
+                    <span className="text-11 font-semibold text-orange-ink">
+                      pending
+                    </span>
+                  </span>
+                </button>
               )
             })}
-          </ul>
+          </Card>
         </Section>
       )}
 
       {isNew && <Checklist />}
+    </div>
+  )
+}
+
+/* Bolo's line is always about the user's actual situation — never filler. */
+function BoloGreeting({ greet }: { greet: string }) {
+  const { s } = useStore()
+  const open = sel.openForMe(s)
+  const isNew = s.ledger.length === 0 && s.submissions.length === 0
+  const attention = sel.attention(s)
+  const review = s.submissions.find((x) => x.status === "under_review")
+  const sess = s.session
+  let mood: Mood = "idle"
+  let line = `${open.length} missions are open in ${LANGS[s.lang].name}. The quick ones fit in a chai break.`
+  if (sel.eligible(s).length === 0) {
+    mood = "sleep"
+    line = `No ${LANGS[s.lang].name} missions right now. I'll wake you the moment labs need your voice.`
+  } else if (isNew) {
+    mood = "idle"
+    const m = shortest(s)
+    line = `I'm Bolo, I run the studio. ${
+      m ? `Your first mission takes about ${m} minutes. ` : ""
+    }I direct, you talk.`
+  } else if (attention.length) {
+    mood = "coach"
+    line = `One turn in ${sel.job(s, attention[0].jobId).title} didn't land. We'll redo just that one, about 30 seconds.`
+  } else if (sess && sess.status === "capturing") {
+    mood = "coach"
+    line = `You're ${sess.clips.filter((c) => c.state !== "ready").length} of ${sess.clips.length} into ${sel.job(s, sess.jobId).title}. Shall we finish it?`
+  } else if (sess && sess.status === "upload_failed") {
+    mood = "concern"
+    line = `Your takes didn't upload, but they're safe on this phone. One tap to retry.`
+  } else if (review) {
+    mood = "think"
+    line = `${sel.job(s, review.jobId).title} is with reviewers. Usually back within 24 hours. I'll ping you.`
+  }
+  const [hello, setHello] = useState(true)
+  useEffect(() => {
+    const t = setTimeout(() => setHello(false), 1700)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <div className="px-5 pt-1">
+      <h1 className="semi rise text-30 font-bold tracking-[-0.025em]">
+        {greet}, {s.name}
+      </h1>
+      <div className="mt-3 flex items-start gap-2">
+        <div className="-ml-2 shrink-0">
+          <Bolo
+            mood={hello && mood !== "sleep" ? "hello" : mood}
+            size={78}
+            label="Bolo"
+          />
+        </div>
+        <Bubble tail="left" className="mt-2 flex-1">
+          <p className="text-14 leading-snug">
+            <Typed text={line} step={32} />
+          </p>
+        </Bubble>
+      </div>
     </div>
   )
 }
@@ -108,275 +278,459 @@ function SessionCard() {
   const sess = s.session
   if (!sess) return null
   const j = sel.job(s, sess.jobId)
-  const done = sess.clips.filter((c) => c.state !== 'ready').length
-  if (sess.status === 'expired') {
-    const canRestart = j.campaign === 'open'
+  const done = sess.clips.filter((c) => c.state !== "ready").length
+  if (sess.status === "expired") {
+    const canRestart = j.campaign === "open"
     return (
-      <Card className="border border-line">
-        <div className="flex items-center justify-between">
-          <Status k="x" label="Resume window ended" />
-          <span className="text-[13px] text-ink-3">24h passed</span>
-        </div>
-        <div className="mt-3 text-[18px] font-semibold">{j.title}</div>
-        <ul className="mt-2 space-y-1 text-[14px] leading-snug text-ink-2">
-          <li>• {done} clips recorded on this device can no longer be submitted.</li>
-          <li>• Nothing was submitted, so no payout is pending for this job.</li>
-          <li>• {canRestart ? `The job is still open. Starting again is a fresh session at today's rate (${inr(jobTotal(j))}).` : 'This job is no longer open.'}</li>
-        </ul>
-        <div className="mt-4 flex gap-2">
-          {canRestart && (
-            <Btn size="sm" onClick={() => a.startJob(j.id)}>
-              Start again
+      <Notice
+        tone="neutral"
+        icon="clock"
+        title={`${j.title}: resume window ended`}
+        action={
+          <div className="flex gap-2">
+            {canRestart && (
+              <Btn
+                size="sm"
+                v="voice"
+                icon="mic"
+                onClick={() => a.startJob(j.id)}
+              >
+                Start fresh · {inr(jobTotal(j))}
+              </Btn>
+            )}
+            <Btn size="sm" v="outline" onClick={a.clearExpired}>
+              Clear from phone
             </Btn>
-          )}
-          <Btn size="sm" v="outlined" onClick={a.clearExpired}>
-            Remove from device
-          </Btn>
-        </div>
-      </Card>
+          </div>
+        }
+      >
+        {done} takes stayed on this phone for 24h and can no longer be
+        submitted. Nothing was submitted, so nothing was lost from your wallet.
+      </Notice>
     )
   }
-  if (sess.status === 'upload_failed') {
+  if (sess.status === "upload_failed")
     return (
-      <Banner tone="err" title={`${j.title} didn't upload`} action={<Btn size="sm" icon="retry" onClick={a.resume}>Retry upload</Btn>}>
-        {sess.clips.length} clips are safe on this device. Nothing was submitted yet, and this is not a rejection. Resume within {sess.resumeLeft}.
-      </Banner>
+      <Notice
+        tone="attention"
+        icon="upload"
+        title={`${j.title} didn't upload`}
+        action={
+          <Btn size="sm" v="ink" icon="retry" onClick={a.resume}>
+            Retry upload
+          </Btn>
+        }
+      >
+        {sess.clips.length} takes are safe on this phone. This is a connection
+        problem, not a rejection. Resume within {sess.resumeLeft}.
+      </Notice>
     )
-  }
-  if (sess.status === 'uploading') {
-    return <Banner tone="info" title={`Uploading ${j.title}`}>Keep the app open. It becomes “Submitted” only after Feul receives every clip.</Banner>
-  }
+  if (sess.status === "uploading")
+    return (
+      <Notice tone="info" icon="upload" title={`Uploading ${j.title}`}>
+        Keep the app open. It's "submitted" only once every take arrives.
+      </Notice>
+    )
   return (
-    <div className="overflow-hidden rounded-lg bg-carbon p-5 text-carbon-ink">
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium text-carbon-ink-2 ">Continue recording</span>
-        <span className="num font-mono text-[12px] text-carbon-ink-2">{sess.resumeLeft} left to resume</span>
-      </div>
-      <div className="mt-3 text-[20px] font-semibold">{j.title}</div>
-      <div className="mt-0.5 text-[14px] text-carbon-ink-2">
-        {sess.repairOf ? 'Repair' : FORMAT_LABEL[j.format]} · {done} of {sess.clips.length} recorded on device · {inr(sess.locked.total)} locked
-      </div>
-      {sess.honoured && <div className="mt-2 text-[13px] text-peri">Campaign closed to new work. Your session is honoured at the locked rate.</div>}
-      <div className="mt-4 flex gap-1">
-        {sess.clips.map((c, i) => (
-          <span key={i} className={`h-1.5 flex-1 rounded-full ${c.state !== 'ready' ? 'audio-grad' : 'bg-carbon-3'}`} />
-        ))}
-      </div>
-      <div className="mt-4 flex gap-2">
-        <Btn v="inverse" onClick={a.resume}>
-          Resume
-        </Btn>
-      </div>
-    </div>
-  )
-}
-
-export function useCountUp(to: number, ms = 900) {
-  const [v, setV] = useState(to)
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || to === 0) return setV(to)
-    let raf = 0
-    const t0 = performance.now()
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / ms)
-      setV(Math.round(to * (1 - Math.pow(1 - p, 3))))
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [to, ms])
-  return v
-}
-
-function MoneyPlate({ children }: { children: ReactNode }) {
-  return (
-    <div className="anim-rise relative mx-5 mt-6 isolate overflow-hidden rounded-[28px] bg-ultra p-6 text-white shadow-[0_24px_48px_-24px_rgba(43,59,255,.7)]">
-      <div aria-hidden className="anim-drift pointer-events-none absolute -top-28 -right-20 -z-10 h-72 w-72 rounded-full bg-[#8a94ff]/70 blur-3xl" />
-      <div aria-hidden className="anim-drift-slow pointer-events-none absolute -bottom-32 -left-16 -z-10 h-64 w-64 rounded-full bg-[#1a22c9] blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[28px] shadow-[inset_0_1px_0_rgba(255,255,255,.25)]" />
-      {children}
-    </div>
-  )
-}
-
-function FirstEarning() {
-  const { s } = useStore()
-  const open = sel.openForMe(s)
-  // Achievable = sum of open jobs until ₹100; shows how the floor is reachable, not a guarantee.
-  let acc = 0
-  const path = open.filter((j) => (acc < MIN_WITHDRAW ? ((acc += jobTotal(j)), true) : false))
-  const reach = useCountUp(Math.min(acc, 999))
-  return (
-    <MoneyPlate>
-      <div className="text-[13px] font-medium text-white/75">Your first withdrawal</div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="num text-[56px] leading-none font-semibold tracking-[-0.045em]">₹0</span>
-        <span className="num text-[16px] text-white/70">of ₹{MIN_WITHDRAW}</span>
-      </div>
-      <div className="mt-6 flex items-center gap-1.5">
-        {path.map((j, i) => (
-          <div key={j.id} className="relative h-2.5 min-w-0 overflow-hidden rounded-full bg-white/20" style={{ flex: jobTotal(j) }}>
-            <span className="anim-sheen absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/60 to-transparent" style={{ animationDelay: `${600 + i * 180}ms` }} />
-          </div>
-        ))}
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-lime text-ink shadow-[0_0_0_4px_rgba(198,244,50,.25)]">
-          <Icon n="wallet" s={14} />
-        </span>
-      </div>
-      <div className="mt-2.5 flex gap-1.5 pr-[34px]">
-        {path.map((j, i) => (
-          <div key={j.id} className="anim-rise num min-w-0 truncate text-[12px] text-white/75" style={{ flex: jobTotal(j), animationDelay: `${200 + i * 90}ms` }}>
-            <span className="font-semibold text-white">{inr(jobTotal(j))}</span> {ENVS[j.env].short}
-          </div>
-        ))}
-      </div>
-      <div className="mt-5 flex items-center gap-3 rounded-[24px] bg-white/12 p-3.5 backdrop-blur-sm">
-        <span className="num grid h-10 min-w-10 place-items-center rounded-full bg-white px-2 text-[15px] font-semibold text-ultra">{path.length}</span>
-        <p className="text-[13px] leading-snug text-white/85">
-          conversations can reach <span className="num font-semibold text-white">₹{reach}</span>. Money unlocks after each passes review.
-        </p>
-      </div>
-    </MoneyPlate>
-  )
-}
-
-function EarningsModule({ inReview }: { inReview: number }) {
-  const { s, a } = useStore()
-  const gap = Math.max(0, MIN_WITHDRAW - s.available)
-  const held = sel.held(s)
-  const shown = useCountUp(s.available)
-  return (
-    <MoneyPlate>
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium text-white/75">Available to withdraw</span>
-      </div>
-      <div className="num mt-2 text-[60px] leading-none font-semibold tracking-[-0.045em]">{inr(shown)}</div>
-      <div className="num mt-1 text-[13px] text-white/70">
-        <span className="font-semibold text-lime">+{inr(sel.thisWeek(s))}</span> this week
-      </div>
-      <PillProgress className="mt-5" tone="lime" value={s.available} max={MIN_WITHDRAW} label={`${inr(Math.min(s.available, MIN_WITHDRAW))}/${inr(MIN_WITHDRAW)}`} right={gap > 0 ? `${inr(gap)} to withdraw` : 'Ready, no fee'} />
-      <div className="mt-6 flex items-center gap-2">
-        <button onClick={() => a.setTab('wallet')} className="inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-5 text-[14px] font-semibold text-ink transition-transform active:scale-95">
-          {gap > 0 ? 'Open wallet' : `Withdraw ${inr(s.available)}`}
-        </button>
-        <span className="inline-flex h-11 items-center gap-2 rounded-full bg-white/15 px-4 text-[13px] backdrop-blur-sm">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inset-0 animate-ping rounded-full bg-signal motion-reduce:hidden" />
-            <span className="relative h-1.5 w-1.5 rounded-full bg-signal" />
+    <div className="relative overflow-hidden rounded-lg bg-cobalt p-5 text-white shadow-cobalt">
+      <div className="relative">
+        <span className="eyebrow text-white/70">Continue recording</span>
+        <div className="semi mt-1.5 text-24 leading-tight font-bold">
+          {j.title}
+        </div>
+        <div className="tnum mt-1 text-14 text-white/75">
+          {done} of {sess.clips.length} on this phone · {inr(sess.locked.total)}{" "}
+          locked
+        </div>
+        <div className="mt-4 flex gap-1">
+          {sess.clips.map((c, i) => (
+            <span
+              key={i}
+              className={`h-1.5 flex-1 rounded-full ${
+                c.state !== "ready" ? "bg-white" : "bg-white/25"
+              }`}
+            />
+          ))}
+        </div>
+        {sess.honoured && (
+          <p className="mt-3 text-12 text-white/80">
+            Campaign closed to new work. Your session is honoured at the locked
+            rate.
+          </p>
+        )}
+        <div className="mt-4 flex items-center gap-3">
+          <Btn v="white" size="sm" icon="mic" onClick={a.resume}>
+            Resume
+          </Btn>
+          <span className="tnum text-12 text-white/70">
+            {sess.resumeLeft} left
           </span>
-          <span className="num font-semibold">{inr(inReview + held)}</span> in review
-        </span>
+        </div>
       </div>
-      <WeekDots />
-    </MoneyPlate>
-  )
-}
-
-function WeekDots() {
-  const { s } = useStore()
-  const idx = (new Date().getDay() + 6) % 7 // Mon = 0
-  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-  const hit = (i: number) => i <= idx && s.ledger.some((l) => l.kind !== 'withdrawal' && l.day === idx - i)
-  let streak = 0
-  for (let i = idx; i >= 0 && hit(i); i--) streak++
-  const active = days.filter((_, i) => hit(i)).length
-  return (
-    <div className="mt-6 border-t border-white/15 pt-5">
-      <div className="flex items-baseline justify-between text-[13px]">
-        <span className="font-semibold">{streak > 1 ? `${streak}-day streak` : `${active} ${active === 1 ? 'day' : 'days'} recorded`}</span>
-        <span className="num text-white/65">this week</span>
-      </div>
-      <ol className="mt-3 flex justify-between">
-        {days.map((d, i) => {
-          const on = hit(i)
-          const now = i === idx
-          return (
-            <li key={i} className="flex flex-col items-center gap-1.5">
-              <span className={`anim-rise grid h-8 w-8 place-items-center rounded-full text-[12px] font-semibold ${on ? 'bg-lime text-ink' : now ? 'text-white ring-[1.5px] ring-white/80 ring-inset' : 'bg-white/10 text-white/55'}`} style={{ animationDelay: `${i * 50}ms` }}>
-                {on ? <Icon n="check" s={14} /> : d}
-              </span>
-            </li>
-          )
-        })}
-      </ol>
     </div>
   )
 }
 
-function SceneGrid() {
+/* Ink plate: lime is money that's yours, orange is money waiting on reviewers. They never merge. */
+function MoneyCard() {
   const { s, a } = useStore()
-  const open = sel.openForMe(s)
-  const scenes = (Object.keys(ENVS) as Env[]).map((k) => ({ k, jobs: open.filter((j) => j.env === k) })).filter((x) => x.jobs.length).slice(0, 6)
-  if (!scenes.length) return null
+  const inReview = sel.inReview(s) + sel.held(s)
+  const gap = Math.max(0, MIN_WITHDRAW - s.available)
+  const scale = Math.max(MIN_WITHDRAW, s.available + inReview)
+  const rate = sel.rate(s)
   return (
-    <Section title="Pick a scene" className="mt-10" action={<button onClick={() => a.openScene('ALL')} className="text-[14px] font-medium text-primary">All scenes</button>}>
-      <div className="grid grid-cols-3 gap-2.5">
-        {scenes.map(({ k, jobs }) => (
-          <button key={k} onClick={() => a.openScene(k)} className={`flex h-[112px] flex-col items-start justify-between rounded-[24px] p-3.5 text-left transition-transform duration-200 active:scale-[0.96] ${ENV_TINT[k].bg}`}>
-            <span className={`grid h-9 w-9 place-items-center rounded-full bg-white/80 ${ENV_TINT[k].ink}`}>
-              <SceneIcon env={k} s={20} />
-            </span>
-            <span className="w-full">
-              <span className="block truncate text-[14px] leading-tight font-semibold">{ENVS[k].short}</span>
-              <span className="num mt-0.5 block truncate text-[12px] text-ink-2">
-                {jobs.length} {jobs.length === 1 ? "job" : "jobs"} · {inr(Math.max(...jobs.map(jobTotal)))}
-              </span>
-            </span>
-          </button>
-        ))}
+    <div className="rise relative mx-5 mt-5 overflow-hidden rounded-lg bg-ink p-5 text-white shadow-float">
+      <div className="flex items-center justify-between">
+        <span className="eyebrow text-white/55">Yours to withdraw</span>
+        {rate > 0 && (
+          <Tag tone="studio" icon="trend">
+            <span className="tnum">≈{inr(rate)}/hr</span>
+          </Tag>
+        )}
       </div>
-    </Section>
+      <div className="cond mt-2 text-88 font-bold tracking-[-0.02em] text-lime">
+        <Money value={s.available} />
+      </div>
+      <p className="tnum mt-1 text-14 text-white/60">
+        +{inr(sel.thisWeek(s))} approved this week from {sel.minsWeek(s)} min of
+        speaking
+      </p>
+
+      <div
+        className="mt-5 flex h-2.5 gap-[3px] overflow-hidden rounded-full bg-white/10"
+        role="img"
+        aria-label={`${inr(s.available)} available, ${inr(inReview)} in review`}
+      >
+        <span
+          className="grow-x h-full rounded-full bg-lime"
+          style={{ width: `${(s.available / scale) * 100}%` }}
+        />
+        {inReview > 0 && (
+          <span
+            className="grow-x pulse-dot h-full rounded-full bg-orange"
+            style={{
+              width: `${(inReview / scale) * 100}%`,
+              animationDelay: "200ms",
+            }}
+          />
+        )}
+      </div>
+      <div className="tnum mt-2.5 flex items-center justify-between text-12 text-white/60">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-lime" /> Available
+          {inReview > 0 && (
+            <>
+              <span className="ml-2 h-2 w-2 rounded-full bg-orange" />{" "}
+              {inr(inReview)} with reviewers
+            </>
+          )}
+        </span>
+        <span>{gap > 0 ? `${inr(gap)} to ₹${MIN_WITHDRAW}` : "No fees"}</span>
+      </div>
+
+      <div className="my-4 opacity-25">
+        <Waveform seed={9} bars={64} h={10} tone="light" />
+      </div>
+      <div className="flex items-center gap-2">
+        {gap > 0 ? (
+          <Btn
+            v="glass"
+            size="sm"
+            onClick={() => a.setTab("wallet")}
+            iconRight="arrow"
+          >
+            Open wallet
+          </Btn>
+        ) : (
+          <Btn
+            v="money"
+            size="sm"
+            onClick={() => a.push({ name: "withdraw" })}
+            icon="bank"
+          >
+            Withdraw {inr(s.available)}
+          </Btn>
+        )}
+        <span className="text-12 text-white/50">
+          {gap > 0
+            ? gap <= 30
+              ? "One Quick mission and you can withdraw."
+              : "A few missions and you can withdraw."
+            : "Reaches your UPI in 1 working day."}
+        </span>
+      </div>
+    </div>
   )
 }
 
-function NextJob({ id }: { id: string }) {
+function FirstHundred() {
+  const { s } = useStore()
+  const open = sel
+    .openForMe(s)
+    .slice()
+    .sort((x, y) => x.minutes - y.minutes)
+  let acc = 0
+  const path = open.filter((j) =>
+    acc < MIN_WITHDRAW ? ((acc += jobTotal(j)), true) : false,
+  )
+  const mins = path.reduce((t, j) => t + j.minutes, 0)
+  return (
+    <div className="rise relative mx-5 mt-5 overflow-hidden rounded-lg bg-ink p-5 text-white shadow-float">
+      <span className="eyebrow text-white/55">Your first withdrawal</span>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className="cond text-88 font-bold text-lime">₹0</span>
+        <span className="cond tnum text-30 font-bold text-white/35">
+          / ₹{MIN_WITHDRAW}
+        </span>
+      </div>
+      <div className="mt-5 flex items-center gap-1">
+        {path.map((j, i) => (
+          <div
+            key={j.id}
+            className="relative h-2.5 min-w-0 overflow-hidden rounded-full bg-white/15"
+            style={{ flex: jobTotal(j) }}
+          >
+            <span
+              className="sheen absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+              style={{ animationDelay: `${600 + i * 180}ms` }}
+            />
+          </div>
+        ))}
+        <span className="ml-1 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-lime text-ink">
+          <Icon n="bank" s={14} />
+        </span>
+      </div>
+      <p className="tnum mt-4 text-14 leading-snug text-white/70">
+        <span className="font-semibold text-white">
+          {path.length} missions, about {mins} minutes of talking,
+        </span>{" "}
+        get you to ₹{MIN_WITHDRAW}. Money becomes yours once reviewers approve
+        each one.
+      </p>
+    </div>
+  )
+}
+
+function HeroMission({ id }: { id: string }) {
   const { s, a } = useStore()
   const j = sel.job(s, id)
-  const t = ENV_TINT[j.env]
   return (
-    <div className="overflow-hidden rounded-[28px] bg-surface shadow-[0_1px_2px_rgba(14,15,20,.04),0_16px_40px_-20px_rgba(14,15,20,.2)]">
-      <button onClick={() => a.push({ name: 'detail', jobId: j.id })} className="block w-full text-left">
-        <div className={`relative h-[168px] ${t.bg}`}>
-          <img src={j.image} alt="" className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
-          <span className={`absolute top-4 left-4 inline-flex h-8 items-center gap-1.5 rounded-full bg-white/90 pr-3 pl-2 text-[13px] font-semibold backdrop-blur ${t.ink}`}>
-            <SceneIcon env={j.env} s={17} />
-            {ENVS[j.env].short}
-          </span>
-          {j.coverage >= 1.5 && <span className="num absolute top-4 right-4 inline-flex h-8 items-center rounded-full bg-ink/80 px-3 text-[12px] font-semibold text-white backdrop-blur">{j.coverage.toFixed(1)}× pay</span>}
-        </div>
-        <div className="px-5 pt-5">
-          <div className="num text-[13px] text-ink-2">
-            {FORMAT_LABEL[j.format]} · ~{j.minutes} min · {j.turns} turns · {LANGS[j.lang].native}
+    <div
+      className="rise overflow-hidden rounded-lg bg-surface shadow-card"
+      style={{ animationDelay: "120ms" }}
+    >
+      <button
+        onClick={() => a.push({ name: "detail", jobId: j.id })}
+        className="group block w-full text-left"
+      >
+        <div className="relative h-[176px] overflow-hidden bg-surface-3">
+          <img
+            src={j.image}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-[1200ms] ease-(--ease-out) group-hover:scale-105"
+            onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/55 via-transparent to-transparent" />
+          <div className="absolute top-3.5 left-3.5 flex gap-1.5">
+            <LengthTag l={lengthOf(j)} dark />
+            <RareTag x={j.coverage} />
           </div>
-          <div className="mt-1.5 text-[24px] leading-[1.15] font-semibold tracking-[-0.02em] text-balance">{j.title}</div>
-          <p className="mt-1.5 text-[15px] leading-snug text-pretty text-ink-2">{j.situation}</p>
+          <div className="absolute right-4 bottom-3.5 left-4 flex items-center gap-1.5 text-12 font-semibold text-white">
+            <Icon n={FORMAT_ICON[j.format]} s={14} />
+            {FORMAT_LABEL[j.format]} ·{" "}
+            <span className="tnum">~{j.minutes} min</span> · {j.turns}{" "}
+            {j.format === "LINES" ? "lines" : "turns"} · {LANGS[j.lang].native}
+          </div>
+        </div>
+        <div className="px-5 pt-4">
+          <div className="semi text-24 leading-tight font-bold tracking-[-0.015em]">
+            {j.title}
+          </div>
+          <p className="mt-1 line-clamp-2 text-14 leading-snug text-ink-2">
+            {j.situation}
+          </p>
         </div>
       </button>
-      <div className="flex items-center justify-between gap-3 p-5">
-        <div>
-          <div className="num text-[28px] leading-none font-semibold tracking-[-0.03em]">{inr(jobTotal(j))}</div>
-          <div className="mt-1 text-[12px] text-ink-2">locked when you start</div>
-        </div>
-        <Btn onClick={() => a.startJob(j.id)} icon="mic" className="whitespace-nowrap">
-          {s.ledger.length === 0 ? 'Start earning' : 'Start'}
+      <div className="mx-5 mt-4 grid grid-cols-3 divide-x divide-line rounded-md bg-surface-2">
+        {[
+          [inr(jobTotal(j)), "guaranteed"],
+          [`+${inr(j.bonus)}`, "quality bonus"],
+          [`≈${inr(perHour(j))}`, "per hour"],
+        ].map(([v, l]) => (
+          <div key={l} className="px-3 py-2.5">
+            <div className="cond tnum text-24 leading-none font-bold">{v}</div>
+            <div className="mt-1 text-11 font-medium text-ink-2">{l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="p-5 pt-4">
+        <Btn
+          full
+          size="lg"
+          v="voice"
+          icon="mic"
+          onClick={() => a.startJob(j.id)}
+        >
+          {s.ledger.length === 0 ? "Start my first mission" : "Start mission"}
         </Btn>
       </div>
     </div>
+  )
+}
+
+function QuickRail({ ids }: { ids: string[] }) {
+  const { s, a } = useStore()
+  return (
+    <section className="mt-9">
+      <div className="mb-3.5 flex items-end justify-between px-5">
+        <div>
+          <h2 className="semi text-20 font-bold">Fits in a chai break</h2>
+          <p className="mt-0.5 text-14 text-ink-2">
+            Quick missions, {LENGTHS.quick.range.toLowerCase()}
+          </p>
+        </div>
+        <button
+          onClick={() => a.openLen("quick")}
+          className="text-14 font-semibold text-cobalt"
+        >
+          See all
+        </button>
+      </div>
+      <div className="no-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-2">
+        {ids.map((id, i) => {
+          const j = sel.job(s, id)
+          return (
+            <button
+              key={id}
+              onClick={() => a.push({ name: "detail", jobId: id })}
+              className="rise group w-[172px] shrink-0 snap-start overflow-hidden rounded-lg bg-surface text-left shadow-card transition-transform duration-300 ease-(--ease-spring) active:scale-[0.97]"
+              style={{ animationDelay: `${160 + i * 60}ms` }}
+            >
+              <div className="relative h-[92px] overflow-hidden bg-surface-3">
+                <img
+                  src={j.image}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+                />
+                <span className="absolute top-2 left-2">
+                  <Tag tone="white" icon={FORMAT_ICON[j.format]}>
+                    {LANGS[j.lang].native}
+                  </Tag>
+                </span>
+              </div>
+              <div className="p-3">
+                <div className="truncate text-14 font-semibold">{j.title}</div>
+                <div className="mt-1.5 flex items-baseline justify-between">
+                  <span className="cond tnum text-24 leading-none font-bold">
+                    {inr(jobTotal(j))}
+                  </span>
+                  <span className="tnum text-12 text-ink-2">
+                    {j.minutes} min
+                  </span>
+                </div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function LengthTiles() {
+  const { s, a } = useStore()
+  const mine = sel.openForMe(s)
+  const later = sel
+    .eligible(s)
+    .filter(
+      (j) =>
+        j.campaign === "open" && j.prompts.length > 0 && j.tier > sel.tier(s),
+    )
+  const keys: Length[] = ["quick", "core", "deep"]
+  return (
+    <Section
+      title="Choose by time"
+      sub="Pay is set by minutes of real effort, then lifted for rare voices."
+      className="mt-9"
+    >
+      <div className="grid grid-cols-3 gap-2">
+        {keys.map((k, i) => {
+          const n = mine.filter((j) => lengthOf(j) === k).length
+          const locked = later.filter((j) => lengthOf(j) === k)
+          return (
+            <button
+              key={k}
+              onClick={() => a.openLen(k)}
+              className="rise flex h-[148px] flex-col justify-between rounded-lg bg-surface p-3.5 text-left shadow-card transition-transform duration-300 ease-(--ease-spring) active:scale-[0.96]"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <span
+                className={`grid h-9 w-9 place-items-center rounded-full ${
+                  i === 0 ? "bg-ink text-white" : "bg-surface-3 text-ink"
+                }`}
+              >
+                <Icon n={LENGTHS[k].icon} s={17} />
+              </span>
+              <span>
+                <span className="block text-16 font-semibold">
+                  {LENGTHS[k].label}
+                </span>
+                <span className="tnum block text-12 text-ink-2">
+                  {LENGTHS[k].range}
+                </span>
+                <span className="tnum block text-12 text-ink-2">
+                  {LENGTHS[k].pay}
+                </span>
+                <span className="tnum mt-1 block text-12 font-semibold">
+                  {n > 0
+                    ? `${n} open`
+                    : locked.length
+                      ? `Level ${Math.min(...locked.map((j) => j.tier))} unlocks`
+                      : "None open now"}
+                </span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </Section>
   )
 }
 
 function NoWork() {
   const { s, a } = useStore()
   return (
-    <div className="mx-5 mt-10 rounded-[28px] bg-butter p-6">
-      <Waveform seed={2} bars={40} h={18} tone="muted" progress={0} />
-      <h3 className="mt-4 text-[20px] font-semibold">{LANGS[s.lang].name} coverage is full for now</h3>
-      <p className="mt-2 text-[15px] leading-relaxed text-ink-2">Labs have enough {LANGS[s.lang].name} recordings for their current campaigns. New campaigns usually open within 2–3 days. We don't show filler jobs.</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Btn size="sm" icon="bell" onClick={() => (a.enableAlerts(), a.toast(`We'll notify you when ${LANGS[s.lang].name} work opens`))}>
-          Notify me
+    <div className="mx-5 mt-8 rounded-lg bg-surface p-6 text-center shadow-card">
+      {/* Bolo already says this above; the card stays a quiet, flat waveform. */}
+      <Waveform
+        seed={3}
+        bars={28}
+        h={32}
+        progress={0}
+        className="mx-auto max-w-[168px]"
+      />
+      <h3 className="semi mt-4 text-24 font-bold">
+        {LANGS[s.lang].name} is full for now
+      </h3>
+      <p className="mt-2 text-14 leading-relaxed text-ink-2">
+        Labs have enough {LANGS[s.lang].name} recordings for their current
+        campaigns. New ones usually open within 2–3 days. We never show filler
+        work.
+      </p>
+      <div className="mt-5 flex flex-col gap-2">
+        <Btn
+          icon="bell"
+          v="voice"
+          onClick={() => (
+            a.enableAlerts(),
+            a.toast(`Bolo will wake you when ${LANGS[s.lang].name} work opens`)
+          )}
+        >
+          Wake me when it opens
         </Btn>
-        <Btn size="sm" v="outlined" onClick={() => a.openSheet('edit')}>
+        <Btn v="outline" onClick={() => a.openSheet("edit")}>
           Add another language
         </Btn>
       </div>
@@ -386,28 +740,75 @@ function NoWork() {
 
 function Checklist() {
   const { s, a } = useStore()
+  const m = shortest(s)
   const items = [
-    { l: 'Record your first job', d: 'Earn once it passes review', done: s.submissions.length > 0, go: () => a.setTab('jobs') },
-    { l: 'Add UPI', d: 'Where withdrawals are paid', done: !!s.upi, go: () => a.push({ name: 'withdraw' }) },
-    { l: 'Complete profile', d: 'Name that matches your UPI', done: s.checklist.profile, go: () => a.openSheet('edit') },
-    { l: 'Enable alerts', d: 'Review results and payments', done: s.checklist.alerts, go: () => (a.enableAlerts(), a.toast('Alerts on')) },
+    {
+      l: "Record your first mission",
+      d: m ? `About ${m} minutes with Bolo` : "A short mission with Bolo",
+      done: s.submissions.length > 0,
+      go: () => a.setTab("jobs"),
+      icon: "mic",
+    },
+    {
+      l: "Add your UPI",
+      d: "Where withdrawals land",
+      done: !!s.upi,
+      go: () => a.push({ name: "withdraw" }),
+      icon: "bank",
+    },
+    {
+      l: "Check your name",
+      d: "Must match your UPI",
+      done: s.checklist.profile,
+      go: () => a.openSheet("edit"),
+      icon: "user",
+    },
+    {
+      l: "Turn on alerts",
+      d: "Reviews and payments",
+      done: s.checklist.alerts,
+      go: () => (a.enableAlerts(), a.toast("Alerts on")),
+      icon: "bell",
+    },
   ]
+  const n = items.filter((i) => i.done).length
   return (
-    <Section title="Get set up" className="mt-10">
-      <ul>
-        {items.map((it, i) => (
-          <li key={i}>
-            <button disabled={it.done} onClick={it.go} className="flex w-full items-center gap-4 py-3 text-left">
-              <span className={`grid h-6 w-6 place-items-center rounded-full border-2 ${it.done ? 'border-ultra bg-ultra text-white' : 'border-line-strong'}`}>{it.done && <Icon n="check" s={13} />}</span>
-              <span className="flex-1">
-                <span className={`block text-[15px] font-medium ${it.done ? 'text-ink-3 line-through' : ''}`}>{it.l}</span>
-                <span className="block text-[13px] text-ink-2">{it.d}</span>
+    <Section
+      title="Get set up"
+      action={
+        <span className="tnum text-14 font-semibold text-ink-2">{n}/4</span>
+      }
+      className="mt-10"
+    >
+      <Card className="px-2 py-1">
+        {items.map((it) => (
+          <button
+            key={it.l}
+            disabled={it.done}
+            onClick={it.go}
+            className="flex w-full items-center gap-3.5 rounded-md px-2 py-3 text-left transition-colors hover:bg-surface-2 disabled:hover:bg-transparent"
+          >
+            <span
+              className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${
+                it.done ? "bg-lime text-ink" : "bg-surface-3 text-ink"
+              }`}
+            >
+              <Icon n={it.done ? "check" : it.icon} s={16} stroke={2} />
+            </span>
+            <span className="flex-1">
+              <span
+                className={`block text-16 font-semibold ${
+                  it.done ? "text-ink-3 line-through" : ""
+                }`}
+              >
+                {it.l}
               </span>
-              {!it.done && <Icon n="chev" s={18} className="text-ink-3" />}
-            </button>
-          </li>
+              <span className="block text-12 text-ink-2">{it.d}</span>
+            </span>
+            {!it.done && <Icon n="chev" s={18} className="text-ink-3" />}
+          </button>
         ))}
-      </ul>
+      </Card>
     </Section>
   )
 }

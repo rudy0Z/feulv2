@@ -1,265 +1,384 @@
-@import '@fontsource/schibsted-grotesk/400.css';
-@import '@fontsource/schibsted-grotesk/500.css';
-@import '@fontsource/schibsted-grotesk/600.css';
-@import '@fontsource/schibsted-grotesk/700.css';
-@import '@fontsource/schibsted-grotesk/800.css';
+@import url('https://fonts.googleapis.com/css2?family=Anek+Latin:wdth,wght@75..125,100..800&family=Anek+Devanagari:wdth,wght@75..125,100..800&family=Anek+Tamil:wdth,wght@75..125,100..800&family=Anek+Bangla:wdth,wght@75..125,100..800&display=swap');
+/* Bundled Indic fallbacks: fetched only for glyphs Anek can't supply (e.g. offline), so scripts never fall to tofu. */
 @import '@fontsource/mukta/devanagari-400.css';
-@import '@fontsource/mukta/devanagari-500.css';
 @import '@fontsource/mukta/devanagari-600.css';
 @import '@fontsource/mukta/devanagari-700.css';
 @import '@fontsource/mukta-malar/tamil-400.css';
-@import '@fontsource/mukta-malar/tamil-500.css';
 @import '@fontsource/mukta-malar/tamil-700.css';
 @import '@fontsource/hind-siliguri/bengali-400.css';
-@import '@fontsource/hind-siliguri/bengali-500.css';
 @import '@fontsource/hind-siliguri/bengali-600.css';
 @import '@fontsource/hind-siliguri/bengali-700.css';
 @import '@fontsource/geist-mono/400.css';
 @import '@fontsource/geist-mono/500.css';
 @import 'tailwindcss';
 
+/* FEUL visual grammar
+   One meaning per colour:
+   cobalt = voice (Bolo, recording, anything you say)
+   lime   = money that is yours (approved, available, paid) — never decoration
+   orange = waiting on someone (pending review, retry, held)
+   ink    = focus (studio, primary text, neutral primary actions)
+   red    = destructive or final failure only                                       */
 @theme {
-  --font-sans: 'Schibsted Grotesk', 'Mukta', 'Mukta Malar', 'Hind Siliguri', system-ui, sans-serif;
+  --font-sans: 'Anek Latin', 'Anek Devanagari', 'Anek Tamil', 'Anek Bangla', 'Mukta', 'Mukta Malar', 'Hind Siliguri', system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
 
-  /* Surface */
-  --color-bg: #eef0f4;
+  --color-canvas: #edeff4;
   --color-surface: #ffffff;
-  --color-surface-low: #f7f8fb;
-  --color-surface-high: #eceef4;
-  --color-surface-variant: #e4e7ef;
-  --color-inverse: #101118;
-
-  /* Content */
+  --color-surface-2: #f5f6f9;
+  --color-surface-3: #e7e9ef;
   --color-ink: #0e0f14;
-  --color-ink-2: #5b6072;
-  --color-ink-3: #8a8fa1;
-  --color-line: #e3e5ec;
-  --color-line-strong: #c9cdd8;
+  --color-ink-2: #555a6c;
+  --color-ink-3: #8b90a1;
+  --color-line: #e3e5eb;
+  --color-line-2: #cfd3dc;
 
-  /* Brand */
-  --color-primary: #2b3bff;
-  --color-primary-hi: #4150ff;
-  --color-primary-soft: #e9ebff;
-  --color-on-primary-soft: #1a22a8;
+  --color-cobalt: #2b3bff;
+  --color-cobalt-hi: #5866ff;
+  --color-cobalt-deep: #1a23c4;
+  --color-cobalt-night: #0a0e52;
+  --color-cobalt-soft: #e8eaff;
   --color-peri: #9aa3ff;
 
-  /* Signal plates — each colour carries one meaning */
-  --color-ultra: #2b3bff; /* speak / recording */
-  --color-signal: #ff5a1f; /* review */
-  --color-signal-soft: #ffe9df;
-  --color-lime: #c6f432; /* paid */
-  --color-lime-soft: #f1fccb;
+  --color-lime: #c6f432;
+  --color-lime-soft: #effbc8;
+  --color-lime-ink: #3d5600;
 
-  /* Pastel field — quiet tints for grouping, never for meaning alone */
-  --color-sky: #e7ebff;
-  --color-lilac: #efe9ff;
-  --color-peach: #ffece2;
-  --color-mint: #e3f5e9;
-  --color-butter: #fbf6d9;
+  --color-orange: #ff5a1f;
+  --color-orange-soft: #ffeadf;
+  --color-orange-ink: #b93a08;
 
-  /* Semantic */
-  --color-ok: #127a4b;
-  --color-ok-soft: #e4f5ec;
-  --color-warn: #9a5b00;
-  --color-warn-soft: #fff3dc;
-  --color-err: #c2282f;
-  --color-err-soft: #fde8e8;
-  --color-info: #2b5fd9;
-  --color-info-soft: #e7eeff;
+  --color-red: #d92d20;
+  --color-red-soft: #fde9e7;
 
-  /* Studio (carbon) */
-  --color-carbon: #0c0d12;
-  --color-carbon-2: #16171f;
-  --color-carbon-3: #23252f;
-  --color-carbon-ink: #f2f3f8;
-  --color-carbon-ink-2: #9a9eb0;
+  --color-studio: #0a0b10;
+  --color-studio-2: #14151d;
+  --color-studio-3: #1f212b;
+  --color-studio-line: #2a2d39;
+  --color-studio-ink: #f2f3f8;
+  --color-studio-ink-2: #9a9eb0;
+  --color-studio-ink-3: #636779;
 
-  --radius-sm: 12px;
-  --radius-md: 20px;
-  --radius-lg: 28px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+
+  --text-11: 11px;
+  --text-11--line-height: 1.3;
+  --text-12: 12px;
+  --text-12--line-height: 1.35;
+  --text-14: 14px;
+  --text-14--line-height: 1.4;
+  --text-16: 16px;
+  --text-16--line-height: 1.45;
+  --text-18: 18px;
+  --text-18--line-height: 1.35;
+  --text-20: 20px;
+  --text-20--line-height: 1.22;
+  --text-24: 24px;
+  --text-24--line-height: 1.1;
+  --text-30: 30px;
+  --text-30--line-height: 1.02;
+  --text-38: 38px;
+  --text-38--line-height: 0.98;
+  --text-48: 48px;
+  --text-48--line-height: 0.92;
+  --text-64: 64px;
+  --text-64--line-height: 0.88;
+  --text-88: 88px;
+  --text-88--line-height: 0.84;
+
+  --shadow-card: 0 0 0 1px rgb(14 15 20 / 0.05), 0 1px 2px rgb(14 15 20 / 0.04), 0 10px 28px -14px rgb(14 15 20 / 0.14);
+  --shadow-float: 0 0 0 1px rgb(14 15 20 / 0.06), 0 2px 6px rgb(14 15 20 / 0.06), 0 24px 48px -16px rgb(14 15 20 / 0.38);
+  --shadow-cobalt: 0 14px 30px -10px rgb(43 59 255 / 0.62), inset 0 1px 0 rgb(255 255 255 / 0.22);
+  --shadow-lime: 0 14px 30px -12px rgb(130 170 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.5);
+
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1);
+}
+
+@property --lid {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
 }
 
 @layer base {
   html,
   body {
-    background: var(--color-bg);
+    background: var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
   }
   ::selection {
-    background: var(--color-primary-soft);
+    background: var(--color-cobalt-soft);
   }
-  button {
+  button:not(:disabled) {
     cursor: pointer;
   }
   button:disabled {
     cursor: not-allowed;
   }
-}
-
-@layer utilities {
-  /* Schibsted's tabular set widens punctuation (1 . 2×), so keep proportional figures with lining digits */
-  .num {
-    font-variant-numeric: lining-nums proportional-nums;
-  }
-  .audio-grad {
-    background-image: linear-gradient(90deg, #2b3bff, #5c6bff);
-  }
-  .no-scrollbar {
-    scrollbar-width: none;
-  }
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-@keyframes rise {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-@keyframes fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(108, 99, 255, 0.45);
-  }
-  100% {
-    box-shadow: 0 0 0 18px rgba(108, 99, 255, 0);
-  }
-}
-.anim-rise {
-  animation: rise 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.anim-fade {
-  animation: fade 180ms ease-out;
-}
-.anim-pulse {
-  animation: pulse-ring 1.4s ease-out infinite;
-}
-
-@layer base {
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-cobalt);
     outline-offset: 2px;
   }
-  button:not(:disabled) {
-    cursor: pointer;
-  }
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     text-wrap: balance;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .anim-rise,
-  .anim-fade,
-  .anim-pulse {
-    animation: none;
+/* Anek's width axis is the typographic signature: condensed for money and headlines, normal for reading. */
+@utility cond {
+  font-stretch: 76%;
+}
+@utility semi {
+  font-stretch: 88%;
+}
+@utility wide {
+  font-stretch: 112%;
+}
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+/* Indic scripts need extra leading for matras and conjuncts. */
+@utility script {
+  line-height: 1.42;
+}
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
+@utility eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-stretch: 88%;
+}
 
-@keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
+/* Sticky bars frost only once content scrolls under them. */
+@keyframes glass-light {
+  to {
+    background-color: rgb(237 239 244 / 0.8);
+    backdrop-filter: blur(18px) saturate(1.7);
+    box-shadow: 0 1px 0 rgb(14 15 20 / 0.07);
+  }
 }
-@keyframes shake {
-  20%, 60% { transform: translateX(-6px); }
-  40%, 80% { transform: translateX(6px); }
+@keyframes glass-dark {
+  to {
+    background-color: rgb(10 11 16 / 0.78);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.06);
+  }
 }
-@keyframes bar {
-  50% { transform: scaleY(0.35); }
+.glass-light,
+.glass-dark {
+  animation: glass-light linear both;
+  animation-timeline: scroll(nearest);
+  animation-range: 0 40px;
 }
+.glass-dark {
+  animation-name: glass-dark;
+}
+
+/* ---------- Bolo ---------- */
+@keyframes bolo-bob {
+  50% { transform: translateY(-3px); }
+}
+@keyframes bolo-shadow {
+  50% { transform: scaleX(0.86); opacity: 0.7; }
+}
+@keyframes bolo-blink {
+  0%, 91%, 100% { transform: scaleY(var(--lid)); }
+  94.5% { transform: scaleY(1); }
+}
+@keyframes bolo-sway {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.82); }
+}
+@keyframes bolo-eq {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1.22); }
+}
+@keyframes bolo-meq {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+@keyframes bolo-hop {
+  0% { transform: translateY(0) scale(1, 1); }
+  18% { transform: translateY(1px) scale(1.06, 0.92); }
+  45% { transform: translateY(-11px) scale(0.96, 1.05); }
+  75% { transform: translateY(0) scale(1.05, 0.94); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+@keyframes bolo-hop-shadow {
+  45% { transform: scaleX(0.6); opacity: 0.4; }
+}
+@keyframes bolo-shake {
+  15%, 55% { transform: translateX(-2.2px) rotate(-2deg); }
+  35%, 75% { transform: translateX(2.2px) rotate(2deg); }
+  100% { transform: none; }
+}
+@keyframes bolo-breathe {
+  50% { transform: translateY(1px) scale(1.025, 0.975); }
+}
+@keyframes bolo-orbit {
+  to { transform: rotate(360deg); }
+}
+@keyframes bolo-zz {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translate(8px, -18px) scale(1.1); opacity: 0; }
+}
+@keyframes bolo-arc {
+  0% { transform: scale(0.6); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@keyframes bolo-wave {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-22deg); }
+}
+@keyframes bolo-pump {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(14deg); }
+}
+@keyframes bolo-sparkle {
+  0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+  40% { transform: scale(1) rotate(45deg); opacity: 1; }
+  70% { transform: scale(0.8) rotate(90deg); opacity: 0.9; }
+}
+@keyframes bolo-pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes bolo-jitter {
+  0%, 100% { transform: scaleY(1) skewX(0); }
+  25% { transform: scaleY(0.6) skewX(8deg); }
+  50% { transform: scaleY(1.15) skewX(-6deg); }
+  75% { transform: scaleY(0.75) skewX(4deg); }
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .anim-rise { animation: rise 420ms cubic-bezier(0.2, 0, 0, 1) both; }
-  .anim-shake { animation: shake 360ms ease-out; }
-  .anim-bar { animation: bar 1.1s ease-in-out infinite; transform-origin: center; }
+  .b-bob { animation: bolo-bob 3.4s ease-in-out infinite; }
+  .b-bob-slow { animation: bolo-bob 5.2s ease-in-out infinite; }
+  .b-shadow { animation: bolo-shadow 3.4s ease-in-out infinite; }
+  .b-shadow-slow { animation: bolo-shadow 5.2s ease-in-out infinite; }
+  .b-hop { animation: bolo-hop 620ms var(--ease-out) both; }
+  .b-hop-loop { animation: bolo-hop 760ms var(--ease-out) infinite; }
+  .b-hop-shadow { animation: bolo-hop-shadow 620ms var(--ease-out) both; }
+  .b-hop-shadow-loop { animation: bolo-hop-shadow 760ms var(--ease-out) infinite; }
+  .b-shake { animation: bolo-shake 520ms var(--ease-out) both; }
+  .b-breathe { animation: bolo-breathe 4.6s ease-in-out infinite; }
+  .b-pop { animation: bolo-pop 520ms var(--ease-pop) both; }
+  .b-lid { animation: bolo-blink 5.4s infinite; }
+  .b-sway { animation: bolo-sway 2.8s ease-in-out infinite; }
+  .b-eq { animation: bolo-eq 0.46s ease-in-out infinite; }
+  .b-eq-slow { animation: bolo-eq 1.3s ease-in-out infinite; }
+  .b-jitter { animation: bolo-jitter 0.3s steps(2) infinite; }
+  .b-meq { animation: bolo-meq 0.34s ease-in-out infinite; }
+  .b-orbit { animation: bolo-orbit 2.6s linear infinite; }
+  .b-zz { animation: bolo-zz 2.6s ease-out infinite; }
+  .b-arc { animation: bolo-arc 1.2s ease-out infinite; }
+  .b-wave { animation: bolo-wave 0.55s ease-in-out infinite; }
+  .b-pump { animation: bolo-pump 0.38s ease-in-out infinite; }
+  .b-sparkle { animation: bolo-sparkle 1.6s ease-in-out infinite; }
 }
+.b-lid { transform: scaleY(var(--lid)); transition: --lid 260ms var(--ease-out); }
 
-@keyframes drift {
-  50% { transform: translate(-18px, 14px) scale(1.08); }
+/* ---------- UI motion ---------- */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+}
+@keyframes word-in {
+  from { opacity: 0; filter: blur(5px); transform: translateY(4px); }
 }
 @keyframes grow-x {
   from { transform: scaleX(0); }
+}
+@keyframes grow-y {
+  from { transform: scaleY(0); }
 }
 @keyframes sheen {
   from { transform: translateX(-120%); }
   to { transform: translateX(320%); }
 }
-@keyframes eq {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(1); }
+@keyframes ping-soft {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(2.4); opacity: 0; }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .anim-drift { animation: drift 9s ease-in-out infinite; }
-  .anim-drift-slow { animation: drift 13s ease-in-out -4s infinite reverse; }
-  .anim-grow { animation: grow-x 900ms cubic-bezier(0.2, 0, 0, 1) both; transform-origin: left; }
-  .anim-sheen { animation: sheen 2.8s cubic-bezier(0.4, 0, 0.2, 1) 600ms infinite; }
-  .anim-eq { animation: eq 1.4s ease-in-out infinite; transform-origin: bottom; }
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
 }
-
-.app-bg { background: var(--color-bg); }
-
-/* AI orb — the voice on the other side of the conversation */
-.orb {
-  background:
-    radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.85), transparent 28%),
-    radial-gradient(circle at 70% 75%, #1a22c9, transparent 55%),
-    radial-gradient(circle at 50% 50%, #6b78ff 0%, #2b3bff 55%, #1a22c9 100%);
-  box-shadow: 0 30px 60px -20px rgb(43 59 255 / 0.55), inset 0 -10px 30px rgb(26 34 201 / 0.6), inset 0 6px 16px rgb(255 255 255 / 0.35);
+@keyframes shake {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
 }
-.orb-sheen {
-  background: conic-gradient(from 0deg, transparent 0 60%, rgb(198 244 255 / 0.55) 75%, transparent 90%);
-  mix-blend-mode: screen;
+@keyframes bell {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-4deg); }
 }
-@keyframes orb-spin { to { transform: rotate(360deg); } }
-@keyframes orb-breathe { 50% { transform: scale(1.04); } }
-@keyframes orb-ripple {
-  from { transform: scale(0.9); opacity: 0.5; }
-  to { transform: scale(1.55); opacity: 0; }
-}
-@keyframes orb-think { 50% { transform: scale(0.94); filter: saturate(0.7); } }
-@media (prefers-reduced-motion: no-preference) {
-  .orb-idle { animation: orb-breathe 4s ease-in-out infinite; }
-  .orb-think { animation: orb-think 900ms ease-in-out infinite; }
-  .orb-sheen { animation: orb-spin 6s linear infinite; }
-  .orb-speaking .orb-sheen { animation-duration: 2.2s; }
-  .orb-ripple { animation: orb-ripple 1.8s cubic-bezier(0.2, 0, 0, 1) infinite; }
-}
-
-/* Money moment — full-screen payoff when money lands or leaves for the bank */
-@keyframes mm-reveal { from { clip-path: circle(0% at 50% 42%); } to { clip-path: circle(150% at 50% 42%); } }
-@keyframes mm-pop { 0% { transform: scale(0); } 60% { transform: scale(1.14); } 100% { transform: scale(1); } }
-@keyframes mm-draw { to { stroke-dashoffset: 0; } }
-@keyframes mm-ring { from { transform: scale(1); opacity: 0.6; } to { transform: scale(2.6); opacity: 0; } }
-@keyframes mm-burst {
+@keyframes burst {
   0% { transform: translate(-50%, -50%) rotate(0) scale(0.4); opacity: 0; }
   12% { opacity: 1; }
   100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--r)) scale(1); opacity: 0; }
 }
-@keyframes mm-up { from { transform: translateY(18px); opacity: 0; filter: blur(4px); } to { transform: none; opacity: 1; filter: none; } }
-@keyframes mm-fade { from { opacity: 0; } }
-.mm-draw { stroke-dasharray: 30; stroke-dashoffset: 30; }
-.mm-burst, .mm-ring { opacity: 0; }
+@keyframes reveal {
+  from { clip-path: circle(0% at 50% 44%); }
+  to { clip-path: circle(150% at 50% 44%); }
+}
+@keyframes ring-out {
+  from { transform: scale(1); opacity: 0.6; }
+  to { transform: scale(2.6); opacity: 0; }
+}
+@keyframes pulse-dot {
+  50% { opacity: 0.35; }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.draw { stroke-dasharray: 30; stroke-dashoffset: 30; }
+.burst, .ring-out { opacity: 0; }
+
 @media (prefers-reduced-motion: no-preference) {
-  .mm-reveal { animation: mm-reveal 620ms cubic-bezier(0.7, 0, 0.2, 1) both; }
-  .mm-pop { animation: mm-pop 520ms cubic-bezier(0.34, 1.5, 0.5, 1) 380ms both; }
-  .mm-draw { animation: mm-draw 380ms cubic-bezier(0.6, 0, 0.2, 1) 640ms forwards; }
-  .mm-ring { animation: mm-ring 1100ms cubic-bezier(0.2, 0, 0, 1) both; }
-  .mm-burst { animation: mm-burst 1300ms cubic-bezier(0.1, 0.7, 0.3, 1) both; }
-  .mm-up { animation: mm-up 480ms cubic-bezier(0.2, 0, 0, 1) both; }
+  .rise { animation: rise 520ms var(--ease-out) both; }
+  .fade-in { animation: fade 260ms ease-out both; }
+  .word { display: inline-block; animation: word-in 380ms var(--ease-out) both; }
+  .grow-x { animation: grow-x 900ms var(--ease-out) both; transform-origin: left; }
+  .grow-y { animation: grow-y 700ms var(--ease-pop) both; transform-origin: bottom; }
+  .sheen { animation: sheen 2.8s cubic-bezier(0.4, 0, 0.2, 1) 700ms infinite; }
+  .ping-soft { animation: ping-soft 1.6s var(--ease-out) infinite; }
+  .draw { animation: draw 420ms cubic-bezier(0.6, 0, 0.2, 1) 560ms forwards; }
+  .shake { animation: shake 360ms ease-out; }
+  .bell-ring { animation: bell 900ms ease-in-out 600ms both; transform-origin: 50% 15%; }
+  .burst { animation: burst 1300ms cubic-bezier(0.1, 0.7, 0.3, 1) both; }
+  .reveal { animation: reveal 640ms cubic-bezier(0.7, 0, 0.2, 1) both; }
+  .ring-out { animation: ring-out 1100ms var(--ease-out) both; }
+  .pulse-dot { animation: pulse-dot 1.2s ease-in-out infinite; }
+  .pop-in { animation: pop-in 520ms var(--ease-pop) both; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mm-reveal { animation: mm-fade 300ms ease-out both; }
-  .mm-draw { stroke-dashoffset: 0; }
+  .draw { stroke-dashoffset: 0; }
+  .word { display: inline-block; }
+}
+
+number-flow-react {
+  --number-flow-char-height: 0.9em;
 }
